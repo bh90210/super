@@ -23,7 +23,5 @@
             <string>true</string>
         <key>NSHumanReadableCopyright</key>
             <string>© now, My Company</string>
-        <key>SUFeedURL</key>
-            <string>aeroponics.club/super</string>
     </dict>
 </plist>
