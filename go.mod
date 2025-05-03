@@ -8,7 +8,7 @@ require (
 	github.com/ebitengine/oto/v3 v3.3.3
 	github.com/hajimehoshi/ebiten/v2 v2.8.8
 	github.com/hajimehoshi/go-mp3 v0.3.4
-	github.com/wailsapp/wails/v3 v3.0.0-dev
+	github.com/wailsapp/wails/v3 v3.0.0-alpha.9
 	google.golang.org/grpc v1.72.0
 	google.golang.org/protobuf v1.36.5
 )
@@ -57,4 +57,4 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/wailsapp/wails/v3 => ../wails/v3
+replace github.com/wailsapp/wails/v3 => github.com/bh90210/wails/v3 v3.0.0-alpha.10
