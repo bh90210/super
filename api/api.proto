@@ -1,0 +1,49 @@
+// protoc --go_out=. --go_opt=paths=source_relative \
+//  --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+//  api/api.proto
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/bh90210/super/api";
+
+package api;
+
+service Library {
+  rpc Get(google.protobuf.Empty) returns (LibraryResponse) {}
+  rpc Download(DownloadRequest) returns (DownloadResponse) {}
+}
+
+message LibraryResponse { repeated File file = 1; }
+
+message File {
+  string artist = 1;
+  string album = 2;
+  string track = 3;
+  string duration = 4;
+  string path = 5;
+}
+
+message DownloadRequest { string path = 1; }
+
+message DownloadResponse { bytes data = 1; }
+
+// message DownloadResponse {
+//   oneof response {
+//     DownloadStatus status = 1;
+//     DownloadProgress progress = 2;
+//   }
+// }
+
+// message DownloadStatus {
+//   enum Status {
+//     UNKNOWN = 0;
+//     QUEUED = 1;
+//     DOWNLOADING = 2;
+//     COMPLETED = 3;
+//     CANCELLED = 4;
+//   }
+//   Status status = 5;
+// }
+
+// message DownloadProgress { int32 progress = 1; }
