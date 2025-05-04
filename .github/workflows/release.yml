@@ -42,5 +42,5 @@ jobs:
           build-platform: ${{ matrix.build.platform }}
           package: true
           go-version: '1.24.0'
-          wails-version: '2abd05f7834d3d1310a76c6c378842df74fc7f3b'
+          wails-version: 'v3.0.0-alpha.10'
           sign-sparkle: false
