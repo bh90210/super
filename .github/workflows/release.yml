@@ -18,12 +18,6 @@ jobs:
       matrix:
         build:
           - name: 'SUPER'
-            platform:  'linux/amd64'
-            os: 'ubuntu-latest'
-          - name: 'SUPER'
-            platform:  'windows/amd64'
-            os: 'windows-latest'
-          - name: 'SUPER'
             platform:  'darwin/universal'
             os: 'macos-latest'
 
@@ -42,5 +36,5 @@ jobs:
           build-platform: ${{ matrix.build.platform }}
           package: true
           go-version: '1.24.0'
-          wails-version: 'v3.0.0-alpha.12'
+          wails-version: 'v3.0.0-alpha.9'
           sign-sparkle: false
