@@ -45,6 +45,10 @@ indicatorBar.addEventListener("click", (event: MouseEvent) => {
   Events.Emit({ name: "front.progress", data: event.offsetX });
 });
 
+Events.On("segmented", (message: { data: any }) => {
+	indicatorBar.classList.toggle("segmented");
+});
+
 playButton.addEventListener("click", () => {
   Events.Emit({ name: "front.play.pause", data: "" });
 });

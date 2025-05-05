@@ -11,7 +11,7 @@ package api;
 
 service Library {
   rpc Get(google.protobuf.Empty) returns (LibraryResponse) {}
-  rpc Download(DownloadRequest) returns (DownloadResponse) {}
+  rpc Download(DownloadRequest) returns (stream DownloadResponse) {}
 }
 
 message LibraryResponse { repeated File file = 1; }
