@@ -185,7 +185,7 @@ func (p *Player) New(track string, volume float64) {
 
 	// Remove the images from the size.
 	// TODO: this needs to be replaced with a proper solution.
-	f, err := os.Open(track)
+	f, err := os.Open(filepath.Join(p.localCache, hashedTrack))
 	if err != nil {
 		p.logger.Error("os.Open failed", "error", err)
 		return
