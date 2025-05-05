@@ -229,8 +229,8 @@ func scaleBetween(unscaledNum, minAllowed, maxAllowed, min, max float64) float64
 }
 
 func (s *State) List() []api.File {
-	conn, err := grpc.NewClient("localhost:80", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	// conn, err := grpc.NewClient("super.aeroponics.club:80", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// conn, err := grpc.NewClient("localhost:80", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("super.aeroponics.club:80", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		s.App.Logger.Error("grpc.NewClient", "error", err)
 		return nil
