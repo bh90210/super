@@ -19,10 +19,8 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	grpcServer := grpc.NewServer(
-		grpc.MaxRecvMsgSize(1024*1024*1024),
-		grpc.MaxSendMsgSize(2024*1024*1024),
-	)
+	// creds, err := credentials.NewClientTLSFromFile("roots.pem", "")
+	grpcServer := grpc.NewServer()
 	api.RegisterLibraryServer(grpcServer, &library.Service{
 		LibraryPath: *path,
 	})

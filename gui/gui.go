@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/bh90210/super/api"
@@ -41,6 +42,7 @@ type State struct {
 	tickerKill chan struct{}
 	reposition chan float64
 	playing    PlayerState
+	mu         sync.Mutex
 }
 
 type Menu struct {
@@ -141,7 +143,7 @@ func (s *State) ServiceStartup(ctx context.Context, options application.ServiceO
 		s.App.OnEvent("ready", func(event *application.CustomEvent) {
 			s.App.EmitEvent("previous", true)
 			s.App.EmitEvent("next", true)
-			s.App.EmitEvent("progress.bar", "0")
+			s.App.EmitEvent("progress.bar", 0.)
 			s.App.EmitEvent("time", "--:--")
 			s.App.EmitEvent("play.pause", "Play")
 			s.App.EmitEvent("play.pause.deactivate", true)
@@ -187,6 +189,7 @@ func (s *State) ServiceStartup(ctx context.Context, options application.ServiceO
 	})
 
 	s.App.OnEvent("front.list.play", func(event *application.CustomEvent) {
+		s.App.Logger.Debug("front.list.play", "event", event.Data)
 		s.play(int(event.Data.(float64)))
 	})
 
@@ -226,7 +229,8 @@ func scaleBetween(unscaledNum, minAllowed, maxAllowed, min, max float64) float64
 }
 
 func (s *State) List() []api.File {
-	conn, err := grpc.NewClient("super.aeroponics.club:80", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("localhost:80", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// conn, err := grpc.NewClient("super.aeroponics.club:80", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		s.App.Logger.Error("grpc.NewClient", "error", err)
 		return nil
@@ -257,6 +261,11 @@ func (s *State) List() []api.File {
 }
 
 func (s *State) play(index int) {
+	s.mu.Lock()
+	if s.playing == PLAYING || s.playing == PAUSED {
+		s.tickerKill <- struct{}{}
+	}
+
 	s.App.EmitEvent("status.left", s.Active.Name)
 
 	track, ok := s.Active.List[index-1]
@@ -266,6 +275,8 @@ func (s *State) play(index int) {
 		s.App.EmitEvent("play.pause.deactivate", false)
 		s.App.EmitEvent("status.center", track.Artist+" - "+track.Track)
 		s.Active.Index = index - 1
+
+		s.App.Logger.Debug("play", "track", track.Track, "artist", track.Artist, "index", index-1)
 	}
 
 	nextTrack, nextOk := s.Active.List[index]
@@ -284,86 +295,72 @@ func (s *State) play(index int) {
 		s.App.EmitEvent("previous", true)
 	}
 
-	if s.playing == PLAYING || s.playing == PAUSED {
-		s.tickerKill <- struct{}{}
-	}
-
 	s.playing = PLAYING
+	s.mu.Unlock()
 
-	s.App.EmitEvent("time", "0")
+	s.App.EmitEvent("time", "0s")
 	s.App.EmitEvent("progress.bar", 0.)
 
+	const tik = time.Duration(30 * time.Millisecond)
 	go func() {
-		timer := time.NewTimer(time.Duration(
-			int(float64(s.Player.File.Len())/44100) * int(time.Second),
-		))
-		ticker := time.NewTicker(1 * time.Second)
-
+		ticker := time.NewTicker(tik)
 		for {
 			select {
 			case <-ticker.C:
-				length := s.Player.File.Len()
+				meta := s.Player.Meta()
 
 				s.App.EmitEvent("time", time.Duration(
-					int(float64(s.Player.File.Size()-int64(length))/44100)*int(time.Second),
+					int(float64(meta.Size-meta.Length)/44100)*int(time.Second),
 				).String())
-				s.App.EmitEvent("progress.bar", scaleBetween(float64(s.Player.File.Size()-int64(length)), 0, 100, 0, float64(s.Player.File.Size())))
+				s.App.EmitEvent("progress.bar", scaleBetween(float64(meta.Size-meta.Length), 0, 100, 0, float64(meta.Size)))
 
-			case <-s.tickerStop:
-				timer.Stop()
-				ticker.Stop()
+				if !s.Player.Oto.IsPlaying() {
+					ticker.Stop()
+					s.playing = STOPPED
 
-			case <-s.tickerReset:
-				length := s.Player.File.Len()
+					if nextOk {
+						s.play(index + 1)
+						return
+					}
 
-				timer.Reset(time.Duration(
-					int(float64(length)/44100) * int(time.Second),
-				))
-				ticker.Reset(1 * time.Second)
+					s.App.EmitEvent("play.pause", "Play")
+					s.App.EmitEvent("play.pause.deactivate", true)
+					s.App.EmitEvent("status.center", "--")
+					s.App.EmitEvent("time", "--:--")
+					s.App.EmitEvent("progress.bar", 0.)
 
-			case <-timer.C:
-				ticker.Stop()
-				s.playing = STOPPED
-
-				if nextOk {
-					s.play(index + 1)
 					return
 				}
 
-				s.App.EmitEvent("play.pause", "Play")
-				s.App.EmitEvent("play.pause.deactivate", true)
-				s.App.EmitEvent("status.center", "--")
-				s.App.EmitEvent("progress.bar", "0")
-				s.App.EmitEvent("time", "--:--")
+			case <-s.tickerStop:
+				ticker.Stop()
 
-				return
+			case <-s.tickerReset:
+				ticker.Reset(tik)
 
 			case <-s.tickerKill:
 				return
 
 			case newPosition := <-s.reposition:
-				if s.Player.File != nil {
-					trackLength := s.Player.File.Size()
-
+				meta := s.Player.Meta()
+				if meta.Path != "" {
 					if newPosition < 0 {
 						newPosition = 0
 					}
 
-					if newPosition > 99 {
-						newPosition = 99
+					if newPosition > 100 {
+						newPosition = 100
 					}
 
 					offset := scaleBetween(
 						newPosition,
 						0,
-						float64(trackLength),
+						float64(meta.Size),
 						0,
 						100,
 					)
 
-					s.App.Logger.Debug("offset", "offset", int(offset))
-
-					s.App.EmitEvent("progress.bar", newPosition)
+					s.App.Logger.Debug("offset", "offset", int64(offset), "newpos", newPosition)
 
 					if s.Player.Oto != nil {
 						_, err := s.Player.Oto.Seek(int64(offset)*4, io.SeekStart)
@@ -372,16 +369,12 @@ func (s *State) play(index int) {
 						}
 					}
 
-					length := s.Player.File.Len()
+					meta := s.Player.Meta()
 
 					s.App.EmitEvent("time", time.Duration(
-						length/44100*int(time.Second),
+						int(float64(meta.Size-meta.Length)/44100)*int(time.Second),
 					).String())
-
-					timer.Reset(time.Duration(
-						int(float64(length)/44100) * int(time.Second),
-					))
-					ticker.Reset(1 * time.Second)
+					s.App.EmitEvent("progress.bar", scaleBetween(float64(meta.Size-meta.Length), 0, 100, 0, float64(meta.Size)))
 				}
 			}
 		}

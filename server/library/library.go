@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -17,6 +18,8 @@ import (
 	"github.com/hajimehoshi/go-mp3"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
+
+var _ api.LibraryServer = (*Service)(nil)
 
 type Service struct {
 	LibraryPath   string
@@ -119,16 +122,37 @@ func (s *Service) Get(context.Context, *emptypb.Empty) (*api.LibraryResponse, er
 	return s.CachedLibrary, nil
 }
 
-func (s *Service) Download(ctx context.Context, request *api.DownloadRequest) (*api.DownloadResponse, error) {
-	raw, err := os.ReadFile(request.Path)
+func (s *Service) Download(request *api.DownloadRequest, response api.Library_DownloadServer) error {
+	f, err := os.Open(request.Path)
 	if err != nil {
 		fmt.Println("os.ReadFile", "path", request.Path, "error", err)
-		return nil, err
+		return err
 	}
 
-	fmt.Println("os.ReadFile", "path", request.Path, "size", len(raw))
+	defer f.Close()
 
-	return &api.DownloadResponse{
-		Data: raw,
-	}, nil
+	for {
+		buf := make([]byte, 1024*1024)
+		n, err := f.Read(buf)
+		if err != nil && !errors.Is(err, io.EOF) {
+			fmt.Println("f.Read", "path", request.Path, "error", err)
+			return err
+		}
+
+		if len(buf) != 0 {
+			e := response.Send(&api.DownloadResponse{
+				Data: buf[:n],
+			})
+			if e != nil {
+				fmt.Println("response.Send", "path", request.Path, "error", err)
+				return e
+			}
+		}
+
+		if errors.Is(err, io.EOF) {
+			break
+		}
+	}
+
+	return nil
 }
