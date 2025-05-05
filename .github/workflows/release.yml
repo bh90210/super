@@ -18,9 +18,6 @@ jobs:
       matrix:
         build:
           - name: 'SUPER'
-            platform:  'windows/amd64'
-            os: 'windows-latest'
-          - name: 'SUPER'
             platform:  'darwin/universal'
             os: 'macos-latest'
 
