@@ -91,8 +91,8 @@ func (p *Player) New(track string, volume float64) {
 
 		raw = make([]byte, 0)
 
-		conn, err := grpc.NewClient("localhost:80",
-			// conn, err := grpc.NewClient("super.aeroponics.club:80",
+		// conn, err := grpc.NewClient("localhost:80",
+		conn, err := grpc.NewClient("super.aeroponics.club:80",
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
