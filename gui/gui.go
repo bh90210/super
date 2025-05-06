@@ -301,7 +301,33 @@ func (s *State) play(index int) {
 	s.App.EmitEvent("time", "0s")
 	s.App.EmitEvent("progress.bar", 0.)
 
-	const tik = time.Duration(30 * time.Millisecond)
+	var segmented bool
+	for {
+		select {
+		case <-s.tickerKill:
+			return
+
+		default:
+			if !s.Player.Oto.IsPlaying() {
+				if !segmented {
+					segmented = true
+					s.App.EmitEvent("segmented", nil)
+					s.App.EmitEvent("time", "...")
+				}
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+		}
+
+		if segmented {
+			segmented = false
+			s.App.EmitEvent("segmented", nil)
+		}
+
+		break
+	}
+
+	const tik = time.Duration(100 * time.Millisecond)
 	go func() {
 		ticker := time.NewTicker(tik)
 		for {
@@ -366,6 +392,7 @@ func (s *State) play(index int) {
 						_, err := s.Player.Oto.Seek(int64(offset)*4, io.SeekStart)
 						if err != nil {
 							s.App.Logger.Error("s.Player.Oto.Seek", "error", err)
+							return
 						}
 					}
 
