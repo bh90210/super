@@ -121,7 +121,7 @@ func (p *Player) New(track string, volume float64) {
 			return
 		}
 
-		p.metadata.streamer.File, err = os.Create(filepath.Join(p.localCache, hashedTrack))
+		p.metadata.streamer.file, err = os.Create(filepath.Join(p.localCache, hashedTrack))
 		if err != nil {
 			p.logger.Error("os.Create failed", "error", err)
 			return
@@ -148,13 +148,13 @@ func (p *Player) New(track string, volume float64) {
 
 				if data != nil {
 					mu.Lock()
-					n, err := p.metadata.streamer.File.WriteAt(data.Data, int64(writeIndex))
+					n, err := p.metadata.streamer.file.WriteAt(data.Data, int64(writeIndex))
 					if err != nil {
 						p.logger.Error("file.WriteAt failed", "error", err)
 						return
 					}
 
-					err = p.metadata.streamer.File.Sync()
+					err = p.metadata.streamer.file.Sync()
 					if err != nil {
 						p.logger.Error("file.Sync failed", "error", err)
 						return
@@ -178,7 +178,7 @@ func (p *Player) New(track string, volume float64) {
 							pic := m.Picture()
 							if pic != nil {
 								if pic.Data != nil {
-									p.metadata.metaSize += len(pic.Data)
+									p.metadata.size += len(pic.Data)
 								}
 							}
 						}
@@ -252,7 +252,7 @@ func (p *Player) New(track string, volume float64) {
 				pic := m.Picture()
 				if pic != nil {
 					if pic.Data != nil {
-						p.metadata.metaSize += len(pic.Data)
+						p.metadata.size += len(pic.Data)
 					}
 				}
 			}
@@ -266,7 +266,7 @@ type TrackMeta struct {
 	Path   string
 	Format string
 
-	metaSize int
+	size     int
 	streamer *streamer
 }
 
@@ -275,7 +275,7 @@ func (p *Player) Meta() *TrackMeta {
 	defer p.mu.RUnlock()
 
 	return &TrackMeta{
-		Size:   int(p.metadata.streamer.Size()) - p.metadata.metaSize,
+		Size:   int(p.metadata.streamer.Size()) - p.metadata.size,
 		Length: p.metadata.streamer.Len(),
 		Format: p.metadata.Format,
 		Path:   p.metadata.Path,
@@ -286,8 +286,8 @@ type streamer struct {
 	*bytes.Reader
 	download bool
 	finished bool
-	*os.File
-	i int
+	file     *os.File
+	i        int
 }
 
 func (s *streamer) Read(p []byte) (n int, err error) {
@@ -299,14 +299,15 @@ func (s *streamer) Read(p []byte) (n int, err error) {
 	if s.finished {
 		buf := bytes.NewBuffer([]byte{})
 		// s.File.Seek(0, io.SeekStart)
-		_, err := io.Copy(buf, s.File)
+		_, err := io.Copy(buf, s.file)
 		if err != nil {
 			slog.Error("io.Copy failed", "error", err)
 			return 0, err
 		}
 
 		s.download = false
-		s.File.Close()
+		s.file.Close()
+		s.file = nil
 
 		s.Reader = bytes.NewReader(buf.Bytes())
 		// s.Reader.Seek(int64(s.i), io.SeekStart)
@@ -315,14 +316,14 @@ func (s *streamer) Read(p []byte) (n int, err error) {
 		return n, err
 	}
 
-	n, err = s.File.Read(p)
+	n, err = s.file.Read(p)
 	s.i += n
 	return n, err
 }
 
 func (s *streamer) Seek(offset int64, whence int) (int64, error) {
 	if s.download {
-		return s.File.Seek(offset, whence)
+		return s.file.Seek(offset, whence)
 	}
 
 	return s.Reader.Seek(offset, whence)
