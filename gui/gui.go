@@ -147,8 +147,8 @@ func (s *State) ServiceStartup(ctx context.Context, options application.ServiceO
 			s.App.EmitEvent("time", "--:--")
 			s.App.EmitEvent("play.pause", "Play")
 			s.App.EmitEvent("play.pause.deactivate", true)
-			s.App.EmitEvent("volume.set", "80")
-			s.Controls.Volume.Value = .8
+			s.App.EmitEvent("volume.set", "70")
+			s.Controls.Volume.Value = .7
 			s.App.EmitEvent("status.left", "--")
 			s.App.EmitEvent("status.center", "--")
 			s.App.EmitEvent("status.right", "--")
@@ -181,7 +181,7 @@ func (s *State) ServiceStartup(ctx context.Context, options application.ServiceO
 			return
 		}
 
-		vol := scaleBetween(float64(i), 0., 1., 0, 100)
+		vol := scale(float64(i), 0., 1., 0, 100)
 		s.Controls.Volume.Value = vol
 		if s.Player.Oto != nil {
 			s.Player.Oto.SetVolume(vol)
@@ -224,7 +224,7 @@ func (s *State) ServiceStartup(ctx context.Context, options application.ServiceO
 	return nil
 }
 
-func scaleBetween(unscaledNum, minAllowed, maxAllowed, min, max float64) float64 {
+func scale(unscaledNum, minAllowed, maxAllowed, min, max float64) float64 {
 	return (maxAllowed-minAllowed)*(unscaledNum-min)/(max-min) + minAllowed
 }
 
@@ -270,13 +270,19 @@ func (s *State) play(index int) {
 
 	track, ok := s.Active.List[index-1]
 	if ok {
-		s.Player.New(track.Path, s.Controls.Volume.Value)
+		go func() {
+			s.App.EmitEvent("progress.bar", 100)
+			s.App.EmitEvent("segmented", nil)
+			s.App.EmitEvent("time", "loading...")
+		}()
+
 		s.App.EmitEvent("play.pause", "Pause")
 		s.App.EmitEvent("play.pause.deactivate", false)
 		s.App.EmitEvent("status.center", track.Artist+" - "+track.Track)
 		s.Active.Index = index - 1
 
 		s.App.Logger.Debug("play", "track", track.Track, "artist", track.Artist, "index", index-1)
+		s.Player.New(track.Path, s.Controls.Volume.Value, 0)
 	}
 
 	nextTrack, nextOk := s.Active.List[index]
@@ -298,8 +304,8 @@ func (s *State) play(index int) {
 	s.playing = PLAYING
 	s.mu.Unlock()
 
-	s.App.EmitEvent("time", "0s")
-	s.App.EmitEvent("progress.bar", 0.)
+	// s.App.EmitEvent("time", "loading...")
+	// s.App.EmitEvent("progress.bar", 0.)
 
 	for {
 		select {
@@ -316,21 +322,13 @@ func (s *State) play(index int) {
 		break
 	}
 
-	const tik = time.Duration(2000 * time.Millisecond)
+	const tik = time.Duration(200 * time.Millisecond)
 	go func() {
 		ticker := time.NewTicker(tik)
+		var loading bool
 		for {
 			select {
 			case <-ticker.C:
-				meta := s.Player.Meta()
-
-				s.App.Logger.Debug("ticker", "meta", meta)
-
-				s.App.EmitEvent("time", time.Duration(
-					int(float64(meta.Size-meta.Length)/44100)*int(time.Second),
-				).String())
-				s.App.EmitEvent("progress.bar", scaleBetween(float64(meta.Size-meta.Length), 0, 100, 0, float64(meta.Size)))
-
 				if !s.Player.Oto.IsPlaying() {
 					ticker.Stop()
 					s.playing = STOPPED
@@ -348,6 +346,29 @@ func (s *State) play(index int) {
 
 					return
 				}
+
+				meta := s.Player.Meta()
+
+				// s.App.Logger.Debug("ticker", "meta", meta)
+
+				if meta.Size <= 0 || meta.Length <= 0 {
+					if loading {
+						loading = false
+					} else {
+						loading = true
+					}
+					s.App.EmitEvent("progress.bar", 100)
+					s.App.EmitEvent("segmented", nil)
+					s.App.EmitEvent("time", "loading...")
+					continue
+				}
+
+				s.App.EmitEvent("segmented.off", nil)
+
+				s.App.EmitEvent("time", time.Duration(
+					int(float64(meta.Size-meta.Length)/44100)*int(time.Second),
+				).String())
+				s.App.EmitEvent("progress.bar", scale(float64(meta.Size-meta.Length), 0, 100, 0, float64(meta.Size)))
 
 			case <-s.tickerStop:
 				ticker.Stop()
@@ -369,7 +390,7 @@ func (s *State) play(index int) {
 						newPosition = 100
 					}
 
-					offset := scaleBetween(
+					offset := scale(
 						newPosition,
 						0,
 						float64(meta.Size),
@@ -377,13 +398,22 @@ func (s *State) play(index int) {
 						100,
 					)
 
-					s.App.Logger.Debug("offset", "offset", int64(offset), "newpos", newPosition)
+					s.App.Logger.Debug("offset", "offset", int64(offset), "newpos", newPosition, "size", meta.Size)
 
 					if s.Player.Oto != nil {
-						_, err := s.Player.Oto.Seek(int64(offset)*4, io.SeekStart)
-						if err != nil {
-							s.App.Logger.Error("s.Player.Oto.Seek", "error", err)
-							return
+						if meta.Download {
+							if s.Player.Oto.IsPlaying() {
+								s.Player.New(track.Path, s.Controls.Volume.Value, int64(offset)*4)
+							} else {
+								s.Player.New(track.Path, s.Controls.Volume.Value, int64(offset)*4)
+								s.Player.Oto.Pause()
+							}
+						} else {
+							_, err := s.Player.Oto.Seek(int64(offset)*4, io.SeekStart)
+							if err != nil {
+								s.App.Logger.Error("s.Player.Oto.Seek", "error", err)
+								return
+							}
 						}
 					}
 
@@ -392,7 +422,7 @@ func (s *State) play(index int) {
 					s.App.EmitEvent("time", time.Duration(
 						int(float64(meta.Size-meta.Length)/44100)*int(time.Second),
 					).String())
-					s.App.EmitEvent("progress.bar", scaleBetween(float64(meta.Size-meta.Length), 0, 100, 0, float64(meta.Size)))
+					s.App.EmitEvent("progress.bar", scale(float64(meta.Size-meta.Length), 0, 100, 0, float64(meta.Size)))
 				}
 			}
 		}

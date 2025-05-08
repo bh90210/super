@@ -15,7 +15,6 @@ import (
 	"sync"
 
 	"github.com/bh90210/super/api"
-	"github.com/dhowden/tag"
 	"github.com/ebitengine/oto/v3"
 	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 	"github.com/hajimehoshi/go-mp3"
@@ -32,7 +31,7 @@ type Player struct {
 	logger *slog.Logger
 
 	localCache string
-	metadata   TrackMeta
+	metadata   Meta
 	mu         sync.RWMutex
 }
 
@@ -66,7 +65,7 @@ func (p *Player) Init(logger *slog.Logger) error {
 	return nil
 }
 
-func (p *Player) New(track string, volume float64) {
+func (p *Player) New(track string, volume float64, offset int64) {
 	if p.Oto != nil {
 		if p.Oto.IsPlaying() {
 			p.Oto.Pause()
@@ -99,6 +98,7 @@ func (p *Player) New(track string, volume float64) {
 		fmt.Println("downloading track", track)
 
 		p.metadata.streamer.download = true
+		p.metadata.Download = true
 
 		raw = make([]byte, 0)
 
@@ -121,19 +121,24 @@ func (p *Player) New(track string, volume float64) {
 			return
 		}
 
-		p.metadata.streamer.file, err = os.Create(filepath.Join(p.localCache, hashedTrack))
-		if err != nil {
-			p.logger.Error("os.Create failed", "error", err)
-			return
-		}
-
 		go func(conn *grpc.ClientConn, response api.Library_DownloadClient) {
 			defer conn.Close()
+
+			p.metadata.streamer.file, err = os.CreateTemp(os.TempDir(), "super-")
+			if err != nil {
+				p.logger.Error("os.stream failed", "error", err)
+				return
+			}
+
+			storedFile, err := os.Create(filepath.Join(p.localCache, hashedTrack))
+			if err != nil {
+				p.logger.Error("os.Create failed", "error", err)
+				return
+			}
 
 			var mu sync.Mutex
 			var writeIndex int
 			var releaseCounter int
-			var tagRead []byte
 			for {
 				releaseCounter++
 				if releaseCounter == 3 {
@@ -161,28 +166,24 @@ func (p *Player) New(track string, volume float64) {
 					}
 					mu.Unlock()
 
-					tagRead = append(tagRead, data.Data...)
-
 					writeIndex += n
+
+					_, err = storedFile.Write(data.Data)
+					if err != nil {
+						p.logger.Error("file.WriteAt failed", "error", err)
+						return
+					}
 				}
 
 				if errors.Is(err, io.EOF) {
-					m, err := tag.ReadFrom(bytes.NewReader(tagRead))
-					if err != nil && !errors.Is(err, tag.ErrNoTagsFound) {
-						p.logger.Error("tag.ReadFrom failed", "error", err)
+					err = storedFile.Sync()
+					if err != nil {
+						p.logger.Error("file.Sync failed", "error", err)
 						return
 					}
 
-					if !errors.Is(err, tag.ErrNoTagsFound) {
-						if m != nil {
-							pic := m.Picture()
-							if pic != nil {
-								if pic.Data != nil {
-									p.metadata.size += len(pic.Data)
-								}
-							}
-						}
-					}
+					storedFile.Close()
+
 					p.metadata.streamer.finished = true
 					break
 				}
@@ -227,58 +228,38 @@ func (p *Player) New(track string, volume float64) {
 
 	p.Oto = newPlayer
 
-	p.Oto.SetVolume(volume)
-	p.Oto.Play()
-
-	// Remove the images from the size.
-	// TODO: this needs to be replaced with a proper solution.
-	if !p.metadata.streamer.download {
-		f, err := os.Open(filepath.Join(p.localCache, hashedTrack))
+	if offset > 0 {
+		_, err := p.Oto.Seek(offset, io.SeekStart)
 		if err != nil {
-			p.logger.Error("os.Open failed", "error", err)
+			p.logger.Error("p.Oto.Seek failed", "error", err)
 			return
-		}
-
-		defer f.Close()
-
-		m, err := tag.ReadFrom(f)
-		if err != nil && !errors.Is(err, tag.ErrNoTagsFound) {
-			p.logger.Error("tag.ReadFrom failed", "error", err)
-			return
-		}
-
-		if !errors.Is(err, tag.ErrNoTagsFound) {
-			if m != nil {
-				pic := m.Picture()
-				if pic != nil {
-					if pic.Data != nil {
-						p.metadata.size += len(pic.Data)
-					}
-				}
-			}
 		}
 	}
+
+	p.Oto.SetVolume(volume)
+	p.Oto.Play()
 }
 
-type TrackMeta struct {
-	Size   int
-	Length int
-	Path   string
-	Format string
+type Meta struct {
+	Size     int
+	Length   int
+	Path     string
+	Format   string
+	Download bool
 
-	size     int
 	streamer *streamer
 }
 
-func (p *Player) Meta() *TrackMeta {
+func (p *Player) Meta() *Meta {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	return &TrackMeta{
-		Size:   int(p.metadata.streamer.Size()) - p.metadata.size,
-		Length: p.metadata.streamer.Len(),
-		Format: p.metadata.Format,
-		Path:   p.metadata.Path,
+	return &Meta{
+		Size:     int(p.metadata.streamer.Size()),
+		Length:   p.metadata.streamer.Len(),
+		Format:   p.metadata.Format,
+		Path:     p.metadata.Path,
+		Download: p.metadata.Download,
 	}
 }
 
@@ -287,31 +268,14 @@ type streamer struct {
 	download bool
 	finished bool
 	file     *os.File
+	size     int64
 	i        int
+	seek     int
+	meta     int
 }
 
 func (s *streamer) Read(p []byte) (n int, err error) {
 	if !s.download {
-		n, err := s.Reader.Read(p)
-		return n, err
-	}
-
-	if s.finished {
-		buf := bytes.NewBuffer([]byte{})
-		// s.File.Seek(0, io.SeekStart)
-		_, err := io.Copy(buf, s.file)
-		if err != nil {
-			slog.Error("io.Copy failed", "error", err)
-			return 0, err
-		}
-
-		s.download = false
-		s.file.Close()
-		s.file = nil
-
-		s.Reader = bytes.NewReader(buf.Bytes())
-		// s.Reader.Seek(int64(s.i), io.SeekStart)
-
 		n, err := s.Reader.Read(p)
 		return n, err
 	}
@@ -322,9 +286,48 @@ func (s *streamer) Read(p []byte) (n int, err error) {
 }
 
 func (s *streamer) Seek(offset int64, whence int) (int64, error) {
+	s.seek++
+
+	if s.seek == 3 {
+		slog.Info("seeking to", "offset", offset)
+		s.meta = int(offset)
+	}
+
 	if s.download {
-		return s.file.Seek(offset, whence)
+		n, err := s.file.Seek(offset, whence)
+
+		if whence == io.SeekStart {
+			s.i = int(n)
+		}
+
+		return n, err
 	}
 
 	return s.Reader.Seek(offset, whence)
+}
+
+func (s *streamer) Size() int64 {
+	if s.download && s.finished {
+		if s.size == 0 {
+			i, err := s.file.Stat()
+			if err != nil {
+				slog.Error("file.Stat failed", "error", err)
+				return 0
+			}
+
+			s.size = i.Size()
+		}
+
+		return s.size - int64(s.meta)
+	}
+
+	return s.Reader.Size() - int64(s.meta)
+}
+
+func (s *streamer) Len() int {
+	if s.download {
+		return int(s.size) - s.i
+	}
+
+	return s.Reader.Len()
 }
