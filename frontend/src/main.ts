@@ -49,6 +49,10 @@ Events.On("segmented", (message: { data: any }) => {
 	indicatorBar.classList.toggle("segmented");
 });
 
+Events.On("segmented.off", (message: { data: any }) => {
+	indicatorBar.classList.remove("segmented");
+});
+
 playButton.addEventListener("click", () => {
   Events.Emit({ name: "front.play.pause", data: "" });
 });
