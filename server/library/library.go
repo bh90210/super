@@ -1,22 +1,21 @@
 package library
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bh90210/super/api"
 	"github.com/charlievieth/fastwalk"
 	"github.com/dhowden/tag"
 	"github.com/hajimehoshi/go-mp3"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var _ api.LibraryServer = (*Service)(nil)
@@ -24,16 +23,18 @@ var _ api.LibraryServer = (*Service)(nil)
 type Service struct {
 	LibraryPath   string
 	CachedLibrary *api.LibraryResponse
+
 	api.UnimplementedLibraryServer
+	mu sync.RWMutex
 }
 
-func (s *Service) Get(context.Context, *emptypb.Empty) (*api.LibraryResponse, error) {
-	if s.CachedLibrary != nil {
-		return s.CachedLibrary, nil
-	}
-
-	list := &api.LibraryResponse{
-		File: []*api.File{},
+func NewService(libraryPath string) (*Service, error) {
+	s := &Service{
+		LibraryPath: libraryPath,
+		CachedLibrary: &api.LibraryResponse{
+			AddIndex:    []*api.File{},
+			RemoveIndex: []*api.File{},
+		},
 	}
 
 	walkFn := func(path string, d fs.DirEntry, err error) error {
@@ -72,22 +73,28 @@ func (s *Service) Get(context.Context, *emptypb.Empty) (*api.LibraryResponse, er
 				return err
 			}
 
+			cleanPath := strings.Replace(path, s.LibraryPath, "", 1)
+
 			if errors.Is(err, tag.ErrNoTagsFound) {
-				list.File = append(list.File, &api.File{
+				s.mu.Lock()
+				s.CachedLibrary.AddIndex = append(s.CachedLibrary.AddIndex, &api.File{
 					Artist: filepath.Base(path),
-					Path:   path,
+					Path:   cleanPath,
 				})
+				s.mu.Unlock()
 
 				return nil
 			}
 
-			list.File = append(list.File, &api.File{
+			s.mu.Lock()
+			s.CachedLibrary.AddIndex = append(s.CachedLibrary.AddIndex, &api.File{
 				Artist:   strings.ToValidUTF8(m.Artist(), ""),
 				Album:    strings.ToValidUTF8(m.Album(), ""),
 				Track:    strings.ToValidUTF8(m.Title(), ""),
 				Duration: strings.ToValidUTF8(d.String(), ""),
-				Path:     path,
+				Path:     cleanPath,
 			})
+			s.mu.Unlock()
 		}
 
 		return nil
@@ -99,31 +106,44 @@ func (s *Service) Get(context.Context, *emptypb.Empty) (*api.LibraryResponse, er
 		return nil, err
 	}
 
-	mapped := make(map[string]*api.File)
-	for _, v := range list.File {
-		mapped[v.Path] = v
+	return s, nil
+}
+
+func (s *Service) Get(request *api.LibraryRequest, response api.Library_GetServer) (err error) {
+	slog.Info("Get", "request", request)
+
+	switch request.Index {
+	case 0:
+		s.mu.RLock()
+		list := &api.LibraryResponse{
+			Index:    1,
+			AddIndex: s.CachedLibrary.AddIndex,
+		}
+		s.mu.RUnlock()
+
+		err := response.Send(list)
+		if err != nil {
+			fmt.Println("response.Send", "error", err)
+			return err
+		}
+
+	case 1:
+		err := response.Send(&api.LibraryResponse{
+			Index: 1,
+		})
+		if err != nil {
+			fmt.Println("response.Send", "error", err)
+			return err
+		}
 	}
 
-	sorted := []string{}
-	for k := range mapped {
-		sorted = append(sorted, k)
-	}
-
-	sort.Strings(sorted)
-
-	s.CachedLibrary = &api.LibraryResponse{
-		File: []*api.File{},
-	}
-
-	for _, k := range sorted {
-		s.CachedLibrary.File = append(s.CachedLibrary.File, mapped[k])
-	}
-
-	return s.CachedLibrary, nil
+	return
 }
 
 func (s *Service) Download(request *api.DownloadRequest, response api.Library_DownloadServer) error {
-	f, err := os.Open(request.Path)
+	slog.Info("Download", "request", request)
+
+	f, err := os.Open(filepath.Join(s.LibraryPath, request.Path))
 	if err != nil {
 		fmt.Println("os.ReadFile", "path", request.Path, "error", err)
 		return err

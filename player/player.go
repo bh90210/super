@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	"github.com/bh90210/super/api"
+	"github.com/bh90210/super/super"
 	"github.com/ebitengine/oto/v3"
 	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 	"github.com/hajimehoshi/go-mp3"
@@ -25,20 +26,16 @@ import (
 // Player .
 type Player struct {
 	Oto *oto.Player
-	// File *bytes.Reader
 
 	otoCtx *oto.Context
 	logger *slog.Logger
 
-	localCache string
-	metadata   Meta
-	mu         sync.RWMutex
+	metadata Meta
+	mu       sync.RWMutex
 }
 
 func (p *Player) Init(logger *slog.Logger) error {
-	homeDir, err := os.UserHomeDir()
-	p.localCache = filepath.Join(homeDir, ".super")
-	err = os.Mkdir(p.localCache, 0755)
+	err := os.Mkdir(super.LocalStorage(super.MusicStore), 0755)
 	if err != nil && !errors.Is(err, fs.ErrExist) {
 		log.Fatal("creating local cache", err)
 	}
@@ -79,7 +76,7 @@ func (p *Player) New(track string, volume float64, offset int64) {
 	hashed := h.Sum(nil)
 	hashedTrack := fmt.Sprintf("%x", hashed)
 
-	raw, err := os.ReadFile(filepath.Join(p.localCache, hashedTrack))
+	raw, err := os.ReadFile(super.LocalStorage(super.MusicStore, super.Storage(hashedTrack)))
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		p.logger.Error("os.Open failed", "error", err)
 		return
@@ -93,7 +90,6 @@ func (p *Player) New(track string, volume float64, offset int64) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-
 	if errors.Is(err, fs.ErrNotExist) {
 		fmt.Println("downloading track", track)
 
@@ -102,8 +98,7 @@ func (p *Player) New(track string, volume float64, offset int64) {
 
 		raw = make([]byte, 0)
 
-		// conn, err := grpc.NewClient("localhost:80",
-		conn, err := grpc.NewClient("super.aeroponics.club:80",
+		conn, err := grpc.NewClient(super.SuperServer,
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
@@ -130,7 +125,7 @@ func (p *Player) New(track string, volume float64, offset int64) {
 				return
 			}
 
-			storedFile, err := os.Create(filepath.Join(p.localCache, hashedTrack))
+			storedFile, err := os.Create(super.LocalStorage(super.MusicStore, super.Storage(hashedTrack)))
 			if err != nil {
 				p.logger.Error("os.Create failed", "error", err)
 				return
@@ -184,7 +179,9 @@ func (p *Player) New(track string, volume float64, offset int64) {
 
 					storedFile.Close()
 
+					p.mu.Lock()
 					p.metadata.streamer.finished = true
+					p.mu.Unlock()
 					break
 				}
 			}
@@ -227,7 +224,6 @@ func (p *Player) New(track string, volume float64, offset int64) {
 	}
 
 	p.Oto = newPlayer
-
 	if offset > 0 {
 		_, err := p.Oto.Seek(offset, io.SeekStart)
 		if err != nil {
