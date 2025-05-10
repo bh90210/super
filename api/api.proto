@@ -3,18 +3,22 @@
 //  api/api.proto
 syntax = "proto3";
 
-import "google/protobuf/empty.proto";
-
 option go_package = "github.com/bh90210/super/api";
 
 package api;
 
 service Library {
-  rpc Get(google.protobuf.Empty) returns (LibraryResponse) {}
+  rpc Get(LibraryRequest) returns (stream LibraryResponse) {}
   rpc Download(DownloadRequest) returns (stream DownloadResponse) {}
 }
 
-message LibraryResponse { repeated File file = 1; }
+message LibraryRequest { fixed64 index = 1; }
+
+message LibraryResponse {
+  fixed64 index = 1;
+  repeated File add_index = 2;
+  repeated File remove_index = 3;
+}
 
 message File {
   string artist = 1;

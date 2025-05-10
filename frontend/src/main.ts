@@ -25,6 +25,13 @@ const statusBarRight = document.getElementById(
 
 const list = document.getElementById("list")! as HTMLTableElement;
 
+const searchInput = document.getElementById(
+  "search-input"
+)! as HTMLInputElement;
+const searchButton = document.getElementById(
+  "search-button"
+)! as HTMLButtonElement;
+
 Events.Emit({ name: "ready", data: "" })
   .then(() => {
     console.log("ready");
@@ -46,11 +53,11 @@ indicatorBar.addEventListener("click", (event: MouseEvent) => {
 });
 
 Events.On("segmented", (message: { data: any }) => {
-	indicatorBar.classList.toggle("segmented");
+  indicatorBar.classList.toggle("segmented");
 });
 
 Events.On("segmented.off", (message: { data: any }) => {
-	indicatorBar.classList.remove("segmented");
+  indicatorBar.classList.remove("segmented");
 });
 
 playButton.addEventListener("click", () => {
@@ -73,6 +80,39 @@ volumeMute.addEventListener("click", () => {
 
 volumeMax.addEventListener("click", () => {
   Events.Emit({ name: "front.volume.max", data: "" })
+    .then(() => {
+      // console.log(result);
+    })
+    .catch((err: Error) => {
+      console.log(err);
+    });
+});
+
+searchInput.addEventListener("keyup", (event: KeyboardEvent) => {
+  if (searchInput.value !== "") {
+    searchButton.textContent = "Clear";
+  } else {
+    searchButton.textContent = "Search";
+  }
+
+  //   if (event.key === "Enter") {
+  Events.Emit({ name: "front.search.query", data: searchInput.value })
+    .then(() => {
+      // console.log(result);
+    })
+    .catch((err: Error) => {
+      console.log(err);
+    });
+  //   }
+});
+
+searchButton.addEventListener("click", () => {
+  if (searchButton.textContent === "Clear") {
+    searchInput.value = "";
+    searchButton.textContent = "Search";
+  }
+
+  Events.Emit({ name: "front.search.button", data: searchInput.value })
     .then(() => {
       // console.log(result);
     })
@@ -123,6 +163,15 @@ Events.On("volume.set", (message: { data: any }) => {
 
 Events.On("list", (entries: { data: File }) => {
   var body = list.getElementsByTagName("tbody")[0];
+  var rows = body.rows;
+
+  if (rows.length > 0) {
+    rows[0].scrollIntoView(true);
+
+    for (var i = rows.length - 1; i >= 0; i--) {
+      body.removeChild(rows[i]);
+    }
+  }
 
   entries.data[0].reverse().forEach((entry: File) => {
     var row = body.insertRow(0);
@@ -142,9 +191,9 @@ Events.On("list", (entries: { data: File }) => {
       `" disabled/> <label for="` +
       row.rowIndex +
       `"></label></div>`;
-    cell2.innerHTML = entry.artist ? entry.artist : '';
-    cell3.innerHTML = entry.track ? entry.track : '';
-    cell4.innerHTML = entry.album ? entry.album : '';
-    cell5.innerHTML = entry.duration ? entry.duration : '';
+    cell2.innerHTML = entry.artist ? entry.artist : "";
+    cell3.innerHTML = entry.track ? entry.track : "";
+    cell4.innerHTML = entry.album ? entry.album : "";
+    cell5.innerHTML = entry.duration ? entry.duration : "";
   });
 });

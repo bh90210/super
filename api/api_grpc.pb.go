@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -23,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LibraryClient interface {
-	Get(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*LibraryResponse, error)
+	Get(ctx context.Context, in *LibraryRequest, opts ...grpc.CallOption) (Library_GetClient, error)
 	Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (Library_DownloadClient, error)
 }
 
@@ -35,17 +34,40 @@ func NewLibraryClient(cc grpc.ClientConnInterface) LibraryClient {
 	return &libraryClient{cc}
 }
 
-func (c *libraryClient) Get(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*LibraryResponse, error) {
-	out := new(LibraryResponse)
-	err := c.cc.Invoke(ctx, "/api.Library/Get", in, out, opts...)
+func (c *libraryClient) Get(ctx context.Context, in *LibraryRequest, opts ...grpc.CallOption) (Library_GetClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Library_ServiceDesc.Streams[0], "/api.Library/Get", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &libraryGetClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Library_GetClient interface {
+	Recv() (*LibraryResponse, error)
+	grpc.ClientStream
+}
+
+type libraryGetClient struct {
+	grpc.ClientStream
+}
+
+func (x *libraryGetClient) Recv() (*LibraryResponse, error) {
+	m := new(LibraryResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *libraryClient) Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (Library_DownloadClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Library_ServiceDesc.Streams[0], "/api.Library/Download", opts...)
+	stream, err := c.cc.NewStream(ctx, &Library_ServiceDesc.Streams[1], "/api.Library/Download", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +102,7 @@ func (x *libraryDownloadClient) Recv() (*DownloadResponse, error) {
 // All implementations must embed UnimplementedLibraryServer
 // for forward compatibility
 type LibraryServer interface {
-	Get(context.Context, *emptypb.Empty) (*LibraryResponse, error)
+	Get(*LibraryRequest, Library_GetServer) error
 	Download(*DownloadRequest, Library_DownloadServer) error
 	mustEmbedUnimplementedLibraryServer()
 }
@@ -89,8 +111,8 @@ type LibraryServer interface {
 type UnimplementedLibraryServer struct {
 }
 
-func (UnimplementedLibraryServer) Get(context.Context, *emptypb.Empty) (*LibraryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+func (UnimplementedLibraryServer) Get(*LibraryRequest, Library_GetServer) error {
+	return status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
 func (UnimplementedLibraryServer) Download(*DownloadRequest, Library_DownloadServer) error {
 	return status.Errorf(codes.Unimplemented, "method Download not implemented")
@@ -108,22 +130,25 @@ func RegisterLibraryServer(s grpc.ServiceRegistrar, srv LibraryServer) {
 	s.RegisterService(&Library_ServiceDesc, srv)
 }
 
-func _Library_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
-	if err := dec(in); err != nil {
-		return nil, err
+func _Library_Get_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(LibraryRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(LibraryServer).Get(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.Library/Get",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LibraryServer).Get(ctx, req.(*emptypb.Empty))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(LibraryServer).Get(m, &libraryGetServer{stream})
+}
+
+type Library_GetServer interface {
+	Send(*LibraryResponse) error
+	grpc.ServerStream
+}
+
+type libraryGetServer struct {
+	grpc.ServerStream
+}
+
+func (x *libraryGetServer) Send(m *LibraryResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _Library_Download_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -153,13 +178,13 @@ func (x *libraryDownloadServer) Send(m *DownloadResponse) error {
 var Library_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "api.Library",
 	HandlerType: (*LibraryServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Get",
-			Handler:    _Library_Get_Handler,
-		},
-	},
+	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Get",
+			Handler:       _Library_Get_Handler,
+			ServerStreams: true,
+		},
 		{
 			StreamName:    "Download",
 			Handler:       _Library_Download_Handler,

@@ -3,17 +3,14 @@ package gui
 import (
 	"context"
 	"io"
-	"log"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/bh90210/super/api"
 	"github.com/bh90210/super/player"
+	"github.com/bh90210/super/search"
 	"github.com/wailsapp/wails/v3/pkg/application"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type PlayerState int
@@ -33,6 +30,7 @@ type State struct {
 
 	App    *application.App
 	Player *player.Player
+	Search *search.Search
 
 	// Stop the ticker.
 	tickerStop chan struct{}
@@ -76,9 +74,10 @@ type Controls struct {
 type Dupload struct{}
 
 type Active struct {
-	Name  string
-	List  map[int]*api.File
-	Index int
+	Name string
+	List map[int]*api.File
+
+	index int
 }
 
 type Button struct {
@@ -121,7 +120,7 @@ type ProgressBar struct {
 	Deactivated bool
 }
 
-func (s *State) Init(app *application.App) {
+func (s *State) Init(app *application.App) (err error) {
 	s.Active.List = make(map[int]*api.File)
 	s.tickerReset = make(chan struct{})
 	s.tickerStop = make(chan struct{})
@@ -133,8 +132,17 @@ func (s *State) Init(app *application.App) {
 
 	s.Player = &player.Player{}
 	if err := s.Player.Init(s.App.Logger); err != nil {
-		log.Fatal(err)
+		s.App.Logger.Error("player.Init", "error", err)
+		return err
 	}
+
+	s.Search, err = search.NewSearch()
+	if err != nil {
+		s.App.Logger.Error("search.NewSearch", "error", err)
+		return err
+	}
+
+	return
 }
 
 func (s *State) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
@@ -210,15 +218,45 @@ func (s *State) ServiceStartup(ctx context.Context, options application.ServiceO
 	})
 
 	s.App.OnEvent("front.next", func(event *application.CustomEvent) {
-		s.play(s.Active.Index + 2)
+		s.play(s.Active.index + 2)
 	})
 
 	s.App.OnEvent("front.previous", func(event *application.CustomEvent) {
-		s.play(s.Active.Index)
+		s.play(s.Active.index)
 	})
 
 	s.App.OnEvent("front.progress", func(event *application.CustomEvent) {
 		s.reposition <- event.Data.(float64)
+	})
+
+	s.App.OnEvent("front.search.query", func(event *application.CustomEvent) {
+		if event.Data.(string) == "" {
+			s.List()
+			return
+		}
+
+		list, err := s.Search.Search(event.Data.(string))
+		if err != nil {
+			s.App.Logger.Error("s.Search.Search", "error", err)
+			return
+		}
+
+		s.mu.Lock()
+		s.Active.List = make(map[int]*api.File)
+		for k, v := range list {
+			s.Active.List[k] = &v
+		}
+		s.Active.Name = "Search: " + event.Data.(string)
+		s.mu.Unlock()
+
+		s.App.EmitEvent("list", list)
+
+		s.App.Logger.Debug("front.search.query", "event", event.Data.(string))
+	})
+
+	s.App.OnEvent("front.search.button", func(event *application.CustomEvent) {
+		s.App.Logger.Debug("front.search.button", "event", event.Data)
+		s.List()
 	})
 
 	return nil
@@ -229,31 +267,14 @@ func scale(unscaledNum, minAllowed, maxAllowed, min, max float64) float64 {
 }
 
 func (s *State) List() []api.File {
-	// conn, err := grpc.NewClient("localhost:80", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	conn, err := grpc.NewClient("super.aeroponics.club:80", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		s.App.Logger.Error("grpc.NewClient", "error", err)
-		return nil
+	list := s.Search.List()
+
+	s.mu.Lock()
+	for k, v := range list {
+		s.Active.List[k] = &v
 	}
-
-	defer conn.Close()
-
-	client := api.NewLibraryClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	response, err := client.Get(ctx, &emptypb.Empty{})
-	if err != nil {
-		s.App.Logger.Error("client.Get", "error", err)
-		return nil
-	}
-
-	var list []api.File
-	for k, v := range response.File {
-		s.Active.List[k] = v
-		list = append(list, *v)
-	}
-
 	s.Active.Name = "--"
+	s.mu.Unlock()
 
 	s.App.EmitEvent("list", list)
 
@@ -267,7 +288,6 @@ func (s *State) play(index int) {
 	}
 
 	s.App.EmitEvent("status.left", s.Active.Name)
-
 	track, ok := s.Active.List[index-1]
 	if ok {
 		go func() {
@@ -279,7 +299,7 @@ func (s *State) play(index int) {
 		s.App.EmitEvent("play.pause", "Pause")
 		s.App.EmitEvent("play.pause.deactivate", false)
 		s.App.EmitEvent("status.center", track.Artist+" - "+track.Track)
-		s.Active.Index = index - 1
+		s.Active.index = index - 1
 
 		s.App.Logger.Debug("play", "track", track.Track, "artist", track.Artist, "index", index-1)
 		s.Player.New(track.Path, s.Controls.Volume.Value, 0)
@@ -313,10 +333,14 @@ func (s *State) play(index int) {
 			return
 
 		default:
-			if !s.Player.Oto.IsPlaying() {
-				time.Sleep(10 * time.Millisecond)
-				continue
+			if s.Player.Oto != nil {
+				if s.Player.Oto.IsPlaying() {
+					break
+				}
 			}
+
+			time.Sleep(50 * time.Millisecond)
+			continue
 		}
 
 		break
