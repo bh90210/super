@@ -62,12 +62,12 @@ func main() {
 			Backdrop:                application.MacBackdropTranslucent,
 			TitleBar:                application.MacTitleBarHiddenInset,
 		},
-		BackgroundColour: application.NewRGB(27, 38, 54),
-		URL:              "/",
-		// Frameless:         true,
+		BackgroundColour:  application.NewRGB(27, 38, 54),
+		URL:               "/",
+		Frameless:         true,
 		DisableResize:     false,
-		Width:             1100,
-		Height:            800,
+		Width:             1000,
+		Height:            810,
 		EnableDragAndDrop: true,
 	})
 

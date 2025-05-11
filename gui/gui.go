@@ -259,6 +259,38 @@ func (s *State) ServiceStartup(ctx context.Context, options application.ServiceO
 		s.List()
 	})
 
+	s.App.OnEvent("front.dupload", func(event *application.CustomEvent) {
+		s.App.Logger.Debug("front.dupload", "event", event.Data)
+
+		s.App.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+			Title: "Dupload",
+			Mac: application.MacWindow{
+				InvisibleTitleBarHeight: 0,
+				Backdrop:                application.MacBackdropTranslucent,
+				TitleBar:                application.MacTitleBarHiddenInset,
+			},
+			BackgroundColour:  application.NewRGB(27, 38, 54),
+			URL:               "/dupload",
+			Frameless:         true,
+			DisableResize:     false,
+			Width:             800,
+			Height:            700,
+			EnableDragAndDrop: true,
+		})
+	})
+
+	s.App.OnEvent("front.minimize", func(event *application.CustomEvent) {
+		s.App.CurrentWindow().Minimise()
+	})
+
+	s.App.OnEvent("front.maximize", func(event *application.CustomEvent) {
+		s.App.CurrentWindow().ToggleMaximise()
+	})
+
+	s.App.OnEvent("front.close", func(event *application.CustomEvent) {
+		s.App.CurrentWindow().Close()
+	})
+
 	return nil
 }
 
