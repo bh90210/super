@@ -5,9 +5,8 @@ import (
 	"path/filepath"
 )
 
-const SuperServer = "localhost:80"
-
-// const SuperServer = "super.aeroponics.club:80"
+// const SuperServer = "localhost:80"
+const SuperServer = "super.aeroponics.club:80"
 
 type Storage string
 

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="https://jdan.github.io/98.css/98.css" />
+
+    <title>SUPER</title>
+  </head>
+
+  <body class="container-fluid vh-100" style="margin: 0px; padding: 0px; overflow-x: hidden;">
+    <div class="window" style="height: 100%; width: 100%">
+      <div class="title-bar" style="--wails-draggable: drag">
+        <div class="title-bar-text">SUPER - DUPLOAD</div>
+        <div class="title-bar-controls">
+			<button id="minimize" aria-label="Minimize"></button>
+			<button id="maximize" aria-label="Maximize"></button>
+			<button id="close" aria-label="Close"></button>
+        </div>
+      </div>
+      <div class="window-body">
+        <div class="window-body">
+          <menu role="tablist">
+            <li role="tab" aria-selected="true"><a href="#tabs">Search</a></li>
+            <li role="tab" aria-selected="false"><a href="#tabs">Downloads</a></li>
+            <li role="tab" aria-selected="false"><a href="#tabs">Upload Music</a></li>
+          </menu>
+          <div class="window" role="tabpanel">
+            <div class="window-body">
+              <p>the tab content</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/dupload.ts"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>

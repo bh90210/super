@@ -32,6 +32,18 @@ const searchButton = document.getElementById(
   "search-button"
 )! as HTMLButtonElement;
 
+const duploadButton = document.getElementById("dupload")! as HTMLButtonElement;
+
+const minimizeButton = document.getElementById(
+  "minimize"
+)! as HTMLButtonElement;
+
+const closeButton = document.getElementById("close")! as HTMLButtonElement;
+
+const maximizeButton = document.getElementById(
+  "maximize"
+)! as HTMLButtonElement;
+
 Events.Emit({ name: "ready", data: "" })
   .then(() => {
     console.log("ready");
@@ -121,6 +133,46 @@ searchButton.addEventListener("click", () => {
     });
 });
 
+duploadButton.addEventListener("click", () => {
+  Events.Emit({ name: "front.dupload", data: "" })
+    .then(() => {
+      // console.log(result);
+    })
+    .catch((err: Error) => {
+      console.log(err);
+    });
+});
+
+minimizeButton.addEventListener("click", () => {
+  Events.Emit({ name: "front.minimize", data: "" })
+    .then(() => {
+      // console.log(result);
+    })
+    .catch((err: Error) => {
+      console.log(err);
+    });
+});
+
+maximizeButton.addEventListener("click", () => {
+  Events.Emit({ name: "front.maximize", data: "" })
+    .then(() => {
+      // console.log(result);
+    })
+    .catch((err: Error) => {
+      console.log(err);
+    });
+});
+
+closeButton.addEventListener("click", () => {
+  Events.Emit({ name: "front.close", data: "" })
+    .then(() => {
+      // console.log(result);
+    })
+    .catch((err: Error) => {
+      console.log(err);
+    });
+});
+
 Events.On("status.left", (message: { data: any }) => {
   statusBarLeft.innerText = message.data;
 });
@@ -166,8 +218,7 @@ Events.On("list", (entries: { data: File }) => {
   var rows = body.rows;
 
   if (rows.length > 0) {
-    rows[0].scrollIntoView(true);
-
+	rows[0].scrollIntoView({behavior: "smooth", block: "start", inline: "nearest"});
     for (var i = rows.length - 1; i >= 0; i--) {
       body.removeChild(rows[i]);
     }
@@ -186,14 +237,26 @@ Events.On("list", (entries: { data: File }) => {
     var cell4 = row.insertCell(3);
     var cell5 = row.insertCell(4);
     cell1.innerHTML =
-      `<div class="field-row"><input type="checkbox" id="` +
+      `<div><input type="checkbox" id="` +
       row.rowIndex +
       `" disabled/> <label for="` +
       row.rowIndex +
       `"></label></div>`;
-    cell2.innerHTML = entry.artist ? entry.artist : "";
-    cell3.innerHTML = entry.track ? entry.track : "";
-    cell4.innerHTML = entry.album ? entry.album : "";
-    cell5.innerHTML = entry.duration ? entry.duration : "";
+    cell2.innerHTML =
+      `<div class="d-inline-block text-truncate" style="max-width: 200px;">` +
+      (entry.artist ? entry.artist : "") +
+      `</div>`;
+    cell3.innerHTML =
+      `<div class="d-inline-block text-truncate" style="max-width: 200px;">` +
+      (entry.track ? entry.track : "") +
+      `</div>`;
+    cell4.innerHTML =
+      `<div class="d-inline-block text-truncate" style="max-width: 200px;">` +
+      (entry.album ? entry.album : "") +
+      `</div>`;
+    cell5.innerHTML =
+      `<div class="d-inline-block text-truncate" style="max-width: 200px;">` +
+      (entry.duration ? entry.duration : "") +
+      `</div>`;
   });
 });
