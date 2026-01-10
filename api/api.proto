@@ -32,22 +32,31 @@ message DownloadRequest { string path = 1; }
 
 message DownloadResponse { bytes data = 1; }
 
-// message DownloadResponse {
-//   oneof response {
-//     DownloadStatus status = 1;
-//     DownloadProgress progress = 2;
-//   }
-// }
+service Dupload {
+  rpc Upload(stream UploadRequest) returns (stream UploadResponse) {}
+}
 
-// message DownloadStatus {
-//   enum Status {
-//     UNKNOWN = 0;
-//     QUEUED = 1;
-//     DOWNLOADING = 2;
-//     COMPLETED = 3;
-//     CANCELLED = 4;
-//   }
-//   Status status = 5;
-// }
+message UploadRequest {
+  oneof request {
+    string path = 1;
+    bytes data = 2;
+  }
+}
 
-// message DownloadProgress { int32 progress = 1; }
+message UploadStatus {
+  enum Status {
+    INVALID_PATH = 0;
+    FILE_EXISTS = 1;
+    UPLOADING = 2;
+    CANCELLED = 3;
+  }
+
+  Status status = 4;
+}
+
+message UploadResponse {
+  oneof response {
+    UploadStatus status = 1;
+    int64 progress = 2;
+  }
+}
