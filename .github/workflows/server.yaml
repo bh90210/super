@@ -2,8 +2,8 @@ name: Server CI/CD
 
 on:
   push:
-    tags:
-      - server.**
+    # tags:
+    #   - server.**
 
 jobs:
   docker-build:
@@ -20,7 +20,7 @@ jobs:
                 "containerd-snapshotter": true
               }
             }
-            
+
       - name: Checkout
         uses: actions/checkout@v2
 
