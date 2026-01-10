@@ -5,6 +5,9 @@ on:
     # tags:
     #   - server.**
 
+env:
+  REGISTRY: ghcr.io
+
 jobs:
   docker-build:
     runs-on: ubuntu-latest
@@ -33,7 +36,7 @@ jobs:
       - name: Login to Github Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GHCR_TOKEN }}
 
@@ -45,5 +48,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ github.repository_owner }}/super:server.${{ steps.vars.outputs.tag }}
-            ${{ github.repository_owner }}/super:server.latest
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/super:server.${{ steps.vars.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/super:server.latest
