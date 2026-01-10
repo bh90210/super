@@ -2,8 +2,8 @@ name: Server CI/CD
 
 on:
   push:
-    # tags:
-    #   - server.**
+    tags:
+      - server.**
 
 env:
   REGISTRY: ghcr.io
