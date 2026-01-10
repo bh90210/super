@@ -1,0 +1,14 @@
+FROM --platform=$BUILDPLATFORM golang:1.25.5 AS builder
+ARG TARGETOS
+ARG TARGETARCH
+WORKDIR /super
+COPY ./ ./
+WORKDIR /super/server
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -o ./server
+
+
+FROM scratch
+WORKDIR /super
+COPY --from=builder /super/server/server ./server
+EXPOSE 8888
+ENTRYPOINT ["./server"]
