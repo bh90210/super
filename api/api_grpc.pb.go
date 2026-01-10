@@ -193,3 +193,121 @@ var Library_ServiceDesc = grpc.ServiceDesc{
 	},
 	Metadata: "api/api.proto",
 }
+
+// DuploadClient is the client API for Dupload service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type DuploadClient interface {
+	Upload(ctx context.Context, opts ...grpc.CallOption) (Dupload_UploadClient, error)
+}
+
+type duploadClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewDuploadClient(cc grpc.ClientConnInterface) DuploadClient {
+	return &duploadClient{cc}
+}
+
+func (c *duploadClient) Upload(ctx context.Context, opts ...grpc.CallOption) (Dupload_UploadClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Dupload_ServiceDesc.Streams[0], "/api.Dupload/Upload", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &duploadUploadClient{stream}
+	return x, nil
+}
+
+type Dupload_UploadClient interface {
+	Send(*UploadRequest) error
+	Recv() (*UploadResponse, error)
+	grpc.ClientStream
+}
+
+type duploadUploadClient struct {
+	grpc.ClientStream
+}
+
+func (x *duploadUploadClient) Send(m *UploadRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *duploadUploadClient) Recv() (*UploadResponse, error) {
+	m := new(UploadResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// DuploadServer is the server API for Dupload service.
+// All implementations must embed UnimplementedDuploadServer
+// for forward compatibility
+type DuploadServer interface {
+	Upload(Dupload_UploadServer) error
+	mustEmbedUnimplementedDuploadServer()
+}
+
+// UnimplementedDuploadServer must be embedded to have forward compatible implementations.
+type UnimplementedDuploadServer struct {
+}
+
+func (UnimplementedDuploadServer) Upload(Dupload_UploadServer) error {
+	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
+}
+func (UnimplementedDuploadServer) mustEmbedUnimplementedDuploadServer() {}
+
+// UnsafeDuploadServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to DuploadServer will
+// result in compilation errors.
+type UnsafeDuploadServer interface {
+	mustEmbedUnimplementedDuploadServer()
+}
+
+func RegisterDuploadServer(s grpc.ServiceRegistrar, srv DuploadServer) {
+	s.RegisterService(&Dupload_ServiceDesc, srv)
+}
+
+func _Dupload_Upload_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(DuploadServer).Upload(&duploadUploadServer{stream})
+}
+
+type Dupload_UploadServer interface {
+	Send(*UploadResponse) error
+	Recv() (*UploadRequest, error)
+	grpc.ServerStream
+}
+
+type duploadUploadServer struct {
+	grpc.ServerStream
+}
+
+func (x *duploadUploadServer) Send(m *UploadResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *duploadUploadServer) Recv() (*UploadRequest, error) {
+	m := new(UploadRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Dupload_ServiceDesc is the grpc.ServiceDesc for Dupload service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Dupload_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "api.Dupload",
+	HandlerType: (*DuploadServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Upload",
+			Handler:       _Dupload_Upload_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
+	Metadata: "api/api.proto",
+}
