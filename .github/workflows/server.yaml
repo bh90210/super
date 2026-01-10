@@ -10,24 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          # list of Docker images to use as base name for tags
-          images: |
-            ghcr.io/bh90210/super
-          # generate Docker tags based on the following events/attributes
-          tags: |
-            type=schedule
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-            type=latest
-
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -47,4 +29,6 @@ jobs:
           context: .
           file: ./Dockerfile.server
           push: true
-          tags: server.${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/super:server-${{ steps.vars.outputs.tag }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/super:server-latest
