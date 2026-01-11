@@ -9,6 +9,6 @@ RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -o ./auto
 
 FROM scratch
 WORKDIR /auto
-COPY --from=builder /super/auto ./auto
+COPY --from=builder /super/auto/auto ./auto
 EXPOSE 3000
 ENTRYPOINT ["./auto"]
