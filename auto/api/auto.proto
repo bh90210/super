@@ -8,9 +8,9 @@ option go_package = "github.com/bh90210/super/auto/api";
 package api;
 
 service Github {
-  rpc Webhook(WebhookRequest) returns (Empty) {}
+  rpc Webhook(Empty) returns (stream WebhookResponse) {}
 }
 
-message WebhookRequest { bytes data = 1; }
+message WebhookResponse { bytes data = 1; }
 
 message Empty {}

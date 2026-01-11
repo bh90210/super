@@ -30,7 +30,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GithubClient interface {
-	Webhook(ctx context.Context, in *WebhookRequest, opts ...grpc.CallOption) (*Empty, error)
+	Webhook(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WebhookResponse], error)
 }
 
 type githubClient struct {
@@ -41,21 +41,30 @@ func NewGithubClient(cc grpc.ClientConnInterface) GithubClient {
 	return &githubClient{cc}
 }
 
-func (c *githubClient) Webhook(ctx context.Context, in *WebhookRequest, opts ...grpc.CallOption) (*Empty, error) {
+func (c *githubClient) Webhook(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WebhookResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, Github_Webhook_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &Github_ServiceDesc.Streams[0], Github_Webhook_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpc.GenericClientStream[Empty, WebhookResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Github_WebhookClient = grpc.ServerStreamingClient[WebhookResponse]
 
 // GithubServer is the server API for Github service.
 // All implementations must embed UnimplementedGithubServer
 // for forward compatibility.
 type GithubServer interface {
-	Webhook(context.Context, *WebhookRequest) (*Empty, error)
+	Webhook(*Empty, grpc.ServerStreamingServer[WebhookResponse]) error
 	mustEmbedUnimplementedGithubServer()
 }
 
@@ -66,8 +75,8 @@ type GithubServer interface {
 // pointer dereference when methods are called.
 type UnimplementedGithubServer struct{}
 
-func (UnimplementedGithubServer) Webhook(context.Context, *WebhookRequest) (*Empty, error) {
-	return nil, status.Error(codes.Unimplemented, "method Webhook not implemented")
+func (UnimplementedGithubServer) Webhook(*Empty, grpc.ServerStreamingServer[WebhookResponse]) error {
+	return status.Error(codes.Unimplemented, "method Webhook not implemented")
 }
 func (UnimplementedGithubServer) mustEmbedUnimplementedGithubServer() {}
 func (UnimplementedGithubServer) testEmbeddedByValue()                {}
@@ -90,23 +99,16 @@ func RegisterGithubServer(s grpc.ServiceRegistrar, srv GithubServer) {
 	s.RegisterService(&Github_ServiceDesc, srv)
 }
 
-func _Github_Webhook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WebhookRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func _Github_Webhook_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(GithubServer).Webhook(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Github_Webhook_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GithubServer).Webhook(ctx, req.(*WebhookRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(GithubServer).Webhook(m, &grpc.GenericServerStream[Empty, WebhookResponse]{ServerStream: stream})
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Github_WebhookServer = grpc.ServerStreamingServer[WebhookResponse]
 
 // Github_ServiceDesc is the grpc.ServiceDesc for Github service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -114,12 +116,13 @@ func _Github_Webhook_Handler(srv interface{}, ctx context.Context, dec func(inte
 var Github_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "api.Github",
 	HandlerType: (*GithubServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "Webhook",
-			Handler:    _Github_Webhook_Handler,
+			StreamName:    "Webhook",
+			Handler:       _Github_Webhook_Handler,
+			ServerStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "auto/api/auto.proto",
 }

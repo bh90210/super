@@ -1,0 +1,10 @@
+[Unit]
+Description=Auto (super) service
+
+[Service]
+Restart=always
+RestartSec=1
+ExecStart=/home/byron/super/auto/auto --server=true
+
+[Install]
+WantedBy=multi-user.target
