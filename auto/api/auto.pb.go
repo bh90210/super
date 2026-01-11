@@ -25,9 +25,62 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Hook_Type int32
+
+const (
+	Hook_PUSH    Hook_Type = 0
+	Hook_REGPUSH Hook_Type = 1
+	Hook_RELEASE Hook_Type = 2
+	Hook_TAG     Hook_Type = 3
+)
+
+// Enum value maps for Hook_Type.
+var (
+	Hook_Type_name = map[int32]string{
+		0: "PUSH",
+		1: "REGPUSH",
+		2: "RELEASE",
+		3: "TAG",
+	}
+	Hook_Type_value = map[string]int32{
+		"PUSH":    0,
+		"REGPUSH": 1,
+		"RELEASE": 2,
+		"TAG":     3,
+	}
+)
+
+func (x Hook_Type) Enum() *Hook_Type {
+	p := new(Hook_Type)
+	*p = x
+	return p
+}
+
+func (x Hook_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Hook_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_auto_api_auto_proto_enumTypes[0].Descriptor()
+}
+
+func (Hook_Type) Type() protoreflect.EnumType {
+	return &file_auto_api_auto_proto_enumTypes[0]
+}
+
+func (x Hook_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Hook_Type.Descriptor instead.
+func (Hook_Type) EnumDescriptor() ([]byte, []int) {
+	return file_auto_api_auto_proto_rawDescGZIP(), []int{1, 0}
+}
+
 type WebhookResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Hooktype      *Hook                  `protobuf:"bytes,2,opt,name=hooktype,proto3" json:"hooktype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -69,6 +122,57 @@ func (x *WebhookResponse) GetData() []byte {
 	return nil
 }
 
+func (x *WebhookResponse) GetHooktype() *Hook {
+	if x != nil {
+		return x.Hooktype
+	}
+	return nil
+}
+
+type Hook struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Type          Hook_Type              `protobuf:"varint,5,opt,name=type,proto3,enum=api.Hook_Type" json:"type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Hook) Reset() {
+	*x = Hook{}
+	mi := &file_auto_api_auto_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Hook) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Hook) ProtoMessage() {}
+
+func (x *Hook) ProtoReflect() protoreflect.Message {
+	mi := &file_auto_api_auto_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Hook.ProtoReflect.Descriptor instead.
+func (*Hook) Descriptor() ([]byte, []int) {
+	return file_auto_api_auto_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Hook) GetType() Hook_Type {
+	if x != nil {
+		return x.Type
+	}
+	return Hook_PUSH
+}
+
 type Empty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -77,7 +181,7 @@ type Empty struct {
 
 func (x *Empty) Reset() {
 	*x = Empty{}
-	mi := &file_auto_api_auto_proto_msgTypes[1]
+	mi := &file_auto_api_auto_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -89,7 +193,7 @@ func (x *Empty) String() string {
 func (*Empty) ProtoMessage() {}
 
 func (x *Empty) ProtoReflect() protoreflect.Message {
-	mi := &file_auto_api_auto_proto_msgTypes[1]
+	mi := &file_auto_api_auto_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -102,16 +206,24 @@ func (x *Empty) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Empty.ProtoReflect.Descriptor instead.
 func (*Empty) Descriptor() ([]byte, []int) {
-	return file_auto_api_auto_proto_rawDescGZIP(), []int{1}
+	return file_auto_api_auto_proto_rawDescGZIP(), []int{2}
 }
 
 var File_auto_api_auto_proto protoreflect.FileDescriptor
 
 const file_auto_api_auto_proto_rawDesc = "" +
 	"\n" +
-	"\x13auto/api/auto.proto\x12\x03api\"%\n" +
+	"\x13auto/api/auto.proto\x12\x03api\"L\n" +
 	"\x0fWebhookResponse\x12\x12\n" +
-	"\x04data\x18\x01 \x01(\fR\x04data\"\a\n" +
+	"\x04data\x18\x01 \x01(\fR\x04data\x12%\n" +
+	"\bhooktype\x18\x02 \x01(\v2\t.api.HookR\bhooktype\"_\n" +
+	"\x04Hook\x12\"\n" +
+	"\x04type\x18\x05 \x01(\x0e2\x0e.api.Hook.TypeR\x04type\"3\n" +
+	"\x04Type\x12\b\n" +
+	"\x04PUSH\x10\x00\x12\v\n" +
+	"\aREGPUSH\x10\x01\x12\v\n" +
+	"\aRELEASE\x10\x02\x12\a\n" +
+	"\x03TAG\x10\x03\"\a\n" +
 	"\x05Empty29\n" +
 	"\x06Github\x12/\n" +
 	"\aWebhook\x12\n" +
@@ -129,19 +241,24 @@ func file_auto_api_auto_proto_rawDescGZIP() []byte {
 	return file_auto_api_auto_proto_rawDescData
 }
 
-var file_auto_api_auto_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_auto_api_auto_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_auto_api_auto_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_auto_api_auto_proto_goTypes = []any{
-	(*WebhookResponse)(nil), // 0: api.WebhookResponse
-	(*Empty)(nil),           // 1: api.Empty
+	(Hook_Type)(0),          // 0: api.Hook.Type
+	(*WebhookResponse)(nil), // 1: api.WebhookResponse
+	(*Hook)(nil),            // 2: api.Hook
+	(*Empty)(nil),           // 3: api.Empty
 }
 var file_auto_api_auto_proto_depIdxs = []int32{
-	1, // 0: api.Github.Webhook:input_type -> api.Empty
-	0, // 1: api.Github.Webhook:output_type -> api.WebhookResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	2, // 0: api.WebhookResponse.hooktype:type_name -> api.Hook
+	0, // 1: api.Hook.type:type_name -> api.Hook.Type
+	3, // 2: api.Github.Webhook:input_type -> api.Empty
+	1, // 3: api.Github.Webhook:output_type -> api.WebhookResponse
+	3, // [3:4] is the sub-list for method output_type
+	2, // [2:3] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_auto_api_auto_proto_init() }
@@ -154,13 +271,14 @@ func file_auto_api_auto_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auto_api_auto_proto_rawDesc), len(file_auto_api_auto_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   2,
+			NumEnums:      1,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_auto_api_auto_proto_goTypes,
 		DependencyIndexes: file_auto_api_auto_proto_depIdxs,
+		EnumInfos:         file_auto_api_auto_proto_enumTypes,
 		MessageInfos:      file_auto_api_auto_proto_msgTypes,
 	}.Build()
 	File_auto_api_auto_proto = out.File
