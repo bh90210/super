@@ -19,6 +19,7 @@ type Service struct {
 	api.UnimplementedGithubServer
 
 	streams []api.Github_WebhookServer
+	wgs     []*sync.WaitGroup
 	mu      sync.Mutex
 }
 
@@ -28,8 +29,13 @@ func NewService() (*Service, error) {
 
 func (s *Service) Webhook(_ *api.Empty, stream api.Github_WebhookServer) error {
 	s.mu.Lock()
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	s.streams = append(s.streams, stream)
+	s.wgs = append(s.wgs, wg)
 	s.mu.Unlock()
+
+	wg.Wait()
 
 	return nil
 }
@@ -54,6 +60,8 @@ func (s *Service) Broadcast(hooktype api.Hook_Type, data []byte) {
 
 	for _, v := range removeIndex {
 		s.streams = append(s.streams[:v], s.streams[v+1:]...)
+		s.wgs[v].Done()
+		s.wgs = append(s.wgs[:v], s.wgs[v+1:]...)
 	}
 }
 
@@ -61,7 +69,7 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 	for {
 		resp, err := w.Recv()
 		if err != nil {
-			log.Fatalf("could not receive webhook response: %v", err)
+			log.Printf("could not receive webhook response: %v", err)
 			return err
 		}
 

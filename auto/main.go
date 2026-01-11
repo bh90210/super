@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/bh90210/super/auto/api"
 	"github.com/bh90210/super/auto/webhook"
@@ -34,18 +35,24 @@ func main() {
 				grpc.WithTransportCredentials(insecure.NewCredentials()),
 			)
 			if err != nil {
-				panic("grpc")
+				log.Printf("could not connect to webhook server: %v", err)
+				time.Sleep(2 * time.Second)
+				continue
 			}
 
 			client := api.NewGithubClient(conn)
 			w, err := client.Webhook(context.Background(), &api.Empty{})
 			if err != nil {
-				log.Fatalf("could not call webhook: %v", err)
+				log.Printf("could not call webhook: %v", err)
+				time.Sleep(2 * time.Second)
+				continue
 			}
 
 			err = webhook.GithubWebhook(w)
 			if err != nil {
-				log.Fatalf("could not handle webhook response: %v", err)
+				log.Printf("could not handle webhook response: %v", err)
+				time.Sleep(2 * time.Second)
+				continue
 			}
 		}
 
