@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/bh90210/super/auto/api"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-playground/webhooks/v6/github"
 	"google.golang.org/grpc"
 )
@@ -86,9 +87,10 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 			}
 
 			fmt.Printf("Received push event for repo: %s\n", payload.Repository.FullName)
+			spew.Dump(payload)
 
-		case api.Hook_REGPUSH:
-			var payload PackageEvent
+		case api.Hook_REGPACK:
+			var payload RegistryPackageEvent
 			err = dec.Decode(&payload)
 			if err != nil {
 				fmt.Printf("Could not decode payload: %v\n", err)
@@ -96,6 +98,7 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 			}
 
 			fmt.Printf("Received package event: %s for package: %s\n", payload.Action, payload.Package.Name)
+			spew.Dump(payload)
 
 		case api.Hook_RELEASE:
 			var payload github.ReleasePayload
@@ -106,14 +109,15 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 			}
 
 			fmt.Printf("Received release event for repo: %s, tag: %s\n", payload.Repository.FullName, payload.Release.TagName)
+			spew.Dump(payload)
 
 		}
 	}
 }
 
-// PackageEvent represents the GitHub "package" webhook payload.
+// RegistryPackageEvent represents the GitHub "package" webhook payload.
 // X-GitHub-Event: package
-type PackageEvent struct {
+type RegistryPackageEvent struct {
 	Action       string        `json:"action"`                 // published, updated, deleted
 	Package      Package       `json:"package"`                // Package metadata
 	Organization *Organization `json:"organization,omitempty"` // Present for org-owned packages
