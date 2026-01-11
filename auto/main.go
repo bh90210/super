@@ -68,7 +68,7 @@ func main() {
 		}
 
 		http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-			payload, err := hook.Parse(r)
+			payload, err := hook.Parse(r, github.PushEvent)
 			if err != nil {
 				// if err == github.ErrEventNotFound {
 				// 	fmt.Println("Event not found")
