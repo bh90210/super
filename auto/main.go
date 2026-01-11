@@ -26,7 +26,7 @@ func main() {
 		hook, _ := github.New(github.Options.Secret(githubSecret))
 
 		http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-			payload, err := hook.Parse(r, github.ReleaseEvent, github.PullRequestEvent)
+			payload, err := hook.Parse(r, github.PushEvent)
 			if err != nil {
 				if err == github.ErrEventNotFound {
 					// ok event wasn;t one of the ones asked to be parsed
@@ -42,6 +42,8 @@ func main() {
 				fmt.Printf("Event not handled: %T", payload)
 			}
 		})
+
+		fmt.Println("listening for github webhooks callbacks")
 		http.ListenAndServe(":3000", nil)
 	}
 }
