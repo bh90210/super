@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	_ "embed"
+	"fmt"
 	"log"
 	"log/slog"
 
@@ -38,6 +39,7 @@ func main() {
 		Description: "Earth is captured by a technocapital singularity",
 		Services: []application.Service{
 			application.NewService(state),
+			application.NewService(&state.Dupload),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -46,9 +48,18 @@ func main() {
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
 		LogLevel: slog.LevelDebug,
+		// TODO: finish keybindings.
+		KeyBindings: map[string]func(window *application.WebviewWindow){
+			"CmdOrCtrl+Shift+C": func(window *application.WebviewWindow) {
+				fmt.Println("CmdOrCtrl+Shift+C")
+				state.ClearSearch()
+				// window.HandleKeyEvent("CmdOrCtrl+Shift+I")
+			},
+		},
 	})
 
 	state.Init(app)
+	state.Dupload.Init(app)
 
 	// Create a new window with the necessary options.
 	// 'Title' is the title of the window.
@@ -56,11 +67,15 @@ func main() {
 	// 'BackgroundColour' is the background colour of the window.
 	// 'URL' is the URL that will be loaded into the webview.
 	app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
-		Title: "SUPER",
+		// Title: "SUPER",
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 0,
 			Backdrop:                application.MacBackdropTranslucent,
 			TitleBar:                application.MacTitleBarHiddenInset,
+		},
+		Linux: application.LinuxWindow{
+			WebviewGpuPolicy:    application.WebviewGpuPolicyOnDemand,
+			WindowIsTranslucent: true,
 		},
 		BackgroundColour:  application.NewRGB(27, 38, 54),
 		URL:               "/",
@@ -68,7 +83,9 @@ func main() {
 		DisableResize:     false,
 		Width:             1000,
 		Height:            810,
-		EnableDragAndDrop: true,
+		EnableDragAndDrop: false,
+		MinWidth:          950,
+		MinHeight:         810,
 	})
 
 	// Run the application. This blocks until the application has been exited.
