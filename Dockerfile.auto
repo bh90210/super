@@ -11,4 +11,5 @@ FROM scratch
 WORKDIR /auto
 COPY --from=builder /super/auto/auto ./auto
 EXPOSE 3000
+EXPOSE 3005
 ENTRYPOINT ["./auto"]
