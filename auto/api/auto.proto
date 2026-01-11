@@ -1,0 +1,16 @@
+// protoc --go_out=. --go_opt=paths=source_relative \
+//  --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+//  auto/api/auto.proto
+syntax = "proto3";
+
+option go_package = "github.com/bh90210/super/auto/api";
+
+package api;
+
+service Github {
+  rpc Webhook(WebhookRequest) returns (Empty) {}
+}
+
+message WebhookRequest { bytes data = 1; }
+
+message Empty {}
