@@ -5,9 +5,9 @@ go 1.24.0
 require (
 	github.com/blevesearch/bleve v1.0.14
 	github.com/charlievieth/fastwalk v1.0.10
+	github.com/davecgh/go-spew v1.1.1
 	github.com/dgraph-io/badger/v4 v4.7.0
 	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
-	github.com/dustin/go-humanize v1.0.1
 	github.com/ebitengine/oto/v3 v3.3.3
 	github.com/go-playground/webhooks/v6 v6.4.0
 	github.com/hajimehoshi/ebiten/v2 v2.8.8
@@ -39,6 +39,7 @@ require (
 	github.com/couchbase/vellum v1.0.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.2.0 // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ebitengine/purego v0.8.2 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/glycerine/go-unsnap-stream v0.0.0-20181221182339-f9677308dec2 // indirect

@@ -19,11 +19,10 @@ message WebhookResponse {
 message Hook {
   enum Type {
     PUSH    = 0;
-    REGPUSH = 1;
+    REGPACK = 1;
     RELEASE = 2;
-    TAG     = 3;
   }
-  Type type = 5;
+  Type type = 3;
 }
 
 message Empty {}

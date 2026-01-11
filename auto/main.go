@@ -87,7 +87,7 @@ func main() {
 		http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 			event := r.Header.Get("X-GitHub-Event")
 			fmt.Printf("Received github webhook event: %s\n", event)
-			payload, err := hook.Parse(r, github.PushEvent, github.Event(github.TagSubtype), github.ReleaseEvent, github.Event("package"))
+			payload, err := hook.Parse(r, github.PushEvent, github.ReleaseEvent, github.Event("registry_package"))
 			if err != nil {
 				if errors.Is(err, github.ErrEventNotFound) {
 					fmt.Println(err)
@@ -123,7 +123,7 @@ func main() {
 
 				service.Broadcast(api.Hook_RELEASE, buf.Bytes())
 
-			case webhook.PackageEvent:
+			case webhook.RegistryPackageEvent:
 				var buf bytes.Buffer
 				enc := gob.NewEncoder(&buf)
 				err := enc.Encode(payload)
@@ -132,7 +132,7 @@ func main() {
 					return
 				}
 
-				service.Broadcast(api.Hook_REGPUSH, buf.Bytes())
+				service.Broadcast(api.Hook_REGPACK, buf.Bytes())
 			}
 
 		})

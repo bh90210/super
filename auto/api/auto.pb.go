@@ -29,24 +29,21 @@ type Hook_Type int32
 
 const (
 	Hook_PUSH    Hook_Type = 0
-	Hook_REGPUSH Hook_Type = 1
+	Hook_REGPACK Hook_Type = 1
 	Hook_RELEASE Hook_Type = 2
-	Hook_TAG     Hook_Type = 3
 )
 
 // Enum value maps for Hook_Type.
 var (
 	Hook_Type_name = map[int32]string{
 		0: "PUSH",
-		1: "REGPUSH",
+		1: "REGPACK",
 		2: "RELEASE",
-		3: "TAG",
 	}
 	Hook_Type_value = map[string]int32{
 		"PUSH":    0,
-		"REGPUSH": 1,
+		"REGPACK": 1,
 		"RELEASE": 2,
-		"TAG":     3,
 	}
 )
 
@@ -131,7 +128,7 @@ func (x *WebhookResponse) GetHooktype() *Hook {
 
 type Hook struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          Hook_Type              `protobuf:"varint,5,opt,name=type,proto3,enum=api.Hook_Type" json:"type,omitempty"`
+	Type          Hook_Type              `protobuf:"varint,3,opt,name=type,proto3,enum=api.Hook_Type" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -216,14 +213,13 @@ const file_auto_api_auto_proto_rawDesc = "" +
 	"\x13auto/api/auto.proto\x12\x03api\"L\n" +
 	"\x0fWebhookResponse\x12\x12\n" +
 	"\x04data\x18\x01 \x01(\fR\x04data\x12%\n" +
-	"\bhooktype\x18\x02 \x01(\v2\t.api.HookR\bhooktype\"_\n" +
+	"\bhooktype\x18\x02 \x01(\v2\t.api.HookR\bhooktype\"V\n" +
 	"\x04Hook\x12\"\n" +
-	"\x04type\x18\x05 \x01(\x0e2\x0e.api.Hook.TypeR\x04type\"3\n" +
+	"\x04type\x18\x03 \x01(\x0e2\x0e.api.Hook.TypeR\x04type\"*\n" +
 	"\x04Type\x12\b\n" +
 	"\x04PUSH\x10\x00\x12\v\n" +
-	"\aREGPUSH\x10\x01\x12\v\n" +
-	"\aRELEASE\x10\x02\x12\a\n" +
-	"\x03TAG\x10\x03\"\a\n" +
+	"\aREGPACK\x10\x01\x12\v\n" +
+	"\aRELEASE\x10\x02\"\a\n" +
 	"\x05Empty29\n" +
 	"\x06Github\x12/\n" +
 	"\aWebhook\x12\n" +
