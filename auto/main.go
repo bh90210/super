@@ -85,10 +85,12 @@ func main() {
 		}
 
 		http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-			payload, err := hook.Parse(r, github.PushEvent, github.Event(github.TagSubtype), github.ReleaseEvent, "package")
+			event := r.Header.Get("X-GitHub-Event")
+			fmt.Printf("Received github webhook event: %s\n", event)
+			payload, err := hook.Parse(r, github.PushEvent, github.Event(github.TagSubtype), github.ReleaseEvent, github.Event("package"))
 			if err != nil {
 				if errors.Is(err, github.ErrEventNotFound) {
-					fmt.Println("Event not found")
+					fmt.Println(err)
 					return
 				}
 
