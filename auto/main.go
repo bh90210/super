@@ -37,6 +37,9 @@ func main() {
 			case github.PushPayload:
 				// Do whatever you want from here...
 				fmt.Printf("%+v", payload)
+
+			default:
+				fmt.Printf("Event not handled: %T", payload)
 			}
 		})
 		http.ListenAndServe(":3000", nil)
