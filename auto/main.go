@@ -29,17 +29,20 @@ func main() {
 			payload, err := hook.Parse(r, github.PushEvent)
 			if err != nil {
 				if err == github.ErrEventNotFound {
-					// ok event wasn;t one of the ones asked to be parsed
+					fmt.Println("Event not found")
+					return
 				}
 			}
 
 			switch payload := payload.(type) {
 			case github.PushPayload:
 				// Do whatever you want from here...
-				fmt.Printf("%+v", payload)
+				fmt.Printf("%+v\n", payload)
+				return
 
 			default:
-				fmt.Printf("Event not handled: %T", payload)
+				fmt.Printf("Event not handled: %+v\n", payload)
+				return
 			}
 		})
 
