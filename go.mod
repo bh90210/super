@@ -9,6 +9,7 @@ require (
 	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 	github.com/dustin/go-humanize v1.0.1
 	github.com/ebitengine/oto/v3 v3.3.3
+	github.com/go-playground/webhooks/v6 v6.4.0
 	github.com/hajimehoshi/ebiten/v2 v2.8.8
 	github.com/hajimehoshi/go-mp3 v0.3.4
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.9
