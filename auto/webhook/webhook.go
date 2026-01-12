@@ -2,8 +2,7 @@
 package webhook
 
 import (
-	"bytes"
-	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"log"
 	"sync"
@@ -76,12 +75,8 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 
 		switch resp.Hooktype.Type {
 		case api.Hook_PUSH:
-			buf := bytes.NewBuffer(resp.Data)
-			gob.Register(githubgoo.PushEvent{})
-			dec := gob.NewDecoder(buf)
-
 			var payload githubgoo.PushEvent
-			err = dec.Decode(&payload)
+			err = json.Unmarshal(resp.Data, &payload)
 			if err != nil {
 				fmt.Printf("Could not decode payload: %v\n", err)
 				continue
@@ -91,12 +86,8 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 			spew.Dump(payload)
 
 		case api.Hook_REGPACK:
-			buf := bytes.NewBuffer(resp.Data)
-			gob.Register(githubgoo.RegistryPackageEvent{})
-			dec := gob.NewDecoder(buf)
-
 			var payload githubgoo.RegistryPackageEvent
-			err = dec.Decode(&payload)
+			err = json.Unmarshal(resp.Data, &payload)
 			if err != nil {
 				fmt.Printf("Could not decode payload: %v\n", err)
 				continue
@@ -106,12 +97,8 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 			spew.Dump(payload)
 
 		case api.Hook_RELEASE:
-			buf := bytes.NewBuffer(resp.Data)
-			gob.Register(githubgoo.ReleaseEvent{})
-			dec := gob.NewDecoder(buf)
-
 			var payload githubgoo.ReleaseEvent
-			err = dec.Decode(&payload)
+			err = json.Unmarshal(resp.Data, &payload)
 			if err != nil {
 				fmt.Printf("Could not decode payload: %v\n", err)
 				continue
