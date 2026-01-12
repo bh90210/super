@@ -19,9 +19,9 @@ var _ api.GithubServer = (*Service)(nil)
 type Service struct {
 	api.UnimplementedGithubServer
 
-	streams []api.Github_WebhookServer
-	wgs     []*sync.WaitGroup
-	mu      sync.Mutex
+	stream api.Github_WebhookServer
+	wg     *sync.WaitGroup
+	mu     sync.Mutex
 }
 
 func NewService() (*Service, error) {
@@ -30,10 +30,10 @@ func NewService() (*Service, error) {
 
 func (s *Service) Webhook(_ *api.Empty, stream api.Github_WebhookServer) error {
 	s.mu.Lock()
+	s.stream = stream
 	wg := &sync.WaitGroup{}
+	s.wg = wg
 	wg.Add(1)
-	s.streams = append(s.streams, stream)
-	s.wgs = append(s.wgs, wg)
 	s.mu.Unlock()
 
 	wg.Wait()
@@ -45,24 +45,20 @@ func (s *Service) Broadcast(hooktype api.Hook_Type, data []byte) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	var removeIndex []int
-	for i, stream := range s.streams {
-		err := stream.Send(&api.WebhookResponse{
+	if s.stream != nil {
+		err := s.stream.Send(&api.WebhookResponse{
 			Hooktype: &api.Hook{
 				Type: hooktype,
 			},
 			Data: data,
 		})
 		if err != nil {
-			removeIndex = append(removeIndex, i)
-			continue
-		}
-	}
+			log.Printf("could not send webhook response: %v", err)
 
-	for _, v := range removeIndex {
-		s.streams = append(s.streams[:v], s.streams[v+1:]...)
-		s.wgs[v].Done()
-		s.wgs = append(s.wgs[:v], s.wgs[v+1:]...)
+			if s.wg != nil {
+				s.wg.Done()
+			}
+		}
 	}
 }
 
@@ -115,8 +111,8 @@ func updateSuper(payload githubgoo.RegistryPackageEvent) {
 		return
 	}
 
-	// Check if package name is super.
-	if payload.RegistryPackage.GetName() != "super" {
+	// Check if package name is server.
+	if payload.RegistryPackage.GetName() != "server" {
 		fmt.Printf("Ignoring registry package event for package: %s\n", payload.RegistryPackage.GetName())
 		return
 	}
@@ -128,7 +124,7 @@ func updateSuper(payload githubgoo.RegistryPackageEvent) {
 	}
 
 	// Check if tag is server.latest.
-	if payload.RegistryPackage.PackageVersion.ContainerMetadata.Tag.GetName() != "server.latest" {
+	if payload.RegistryPackage.PackageVersion.ContainerMetadata.Tag.GetName() != "latest" {
 		fmt.Printf("Ignoring registry package event with tag: %s\n", payload.RegistryPackage.PackageVersion.ContainerMetadata.Tag.GetName())
 		return
 	}
