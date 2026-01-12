@@ -1,9 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -99,42 +98,33 @@ func main() {
 
 			switch payload := payload.(type) {
 			case githubgoo.PushEvent:
-				var buf bytes.Buffer
-				gob.Register(githubgoo.PushEvent{})
-				enc := gob.NewEncoder(&buf)
-				err := enc.Encode(payload)
+				payloadBytes, err := json.Marshal(payload)
 				if err != nil {
 					fmt.Printf("Could not encode payload: %v\n", err)
 					return
 				}
 
-				service.Broadcast(api.Hook_PUSH, buf.Bytes())
+				service.Broadcast(api.Hook_PUSH, payloadBytes)
 
 				return
 
 			case githubgoo.ReleaseEvent:
-				var buf bytes.Buffer
-				gob.Register(githubgoo.ReleaseEvent{})
-				enc := gob.NewEncoder(&buf)
-				err := enc.Encode(payload)
+				payloadBytes, err := json.Marshal(payload)
 				if err != nil {
 					fmt.Printf("Could not encode payload: %v\n", err)
 					return
 				}
 
-				service.Broadcast(api.Hook_RELEASE, buf.Bytes())
+				service.Broadcast(api.Hook_RELEASE, payloadBytes)
 
 			case githubgoo.RegistryPackageEvent:
-				var buf bytes.Buffer
-				gob.Register(githubgoo.RegistryPackageEvent{})
-				enc := gob.NewEncoder(&buf)
-				err := enc.Encode(payload)
+				payloadBytes, err := json.Marshal(payload)
 				if err != nil {
 					fmt.Printf("Could not encode payload: %v\n", err)
 					return
 				}
 
-				service.Broadcast(api.Hook_REGPACK, buf.Bytes())
+				service.Broadcast(api.Hook_REGPACK, payloadBytes)
 			}
 
 		})
