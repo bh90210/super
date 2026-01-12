@@ -16,6 +16,7 @@ import (
 	"github.com/bh90210/super/auto/api"
 	"github.com/bh90210/super/auto/webhook"
 	"github.com/go-playground/webhooks/v6/github"
+	githubgoo "github.com/google/go-github/v81/github"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -97,7 +98,7 @@ func main() {
 			}
 
 			switch payload := payload.(type) {
-			case github.PushPayload:
+			case githubgoo.PushEvent:
 				var buf bytes.Buffer
 				enc := gob.NewEncoder(&buf)
 				err := enc.Encode(payload)
@@ -110,7 +111,7 @@ func main() {
 
 				return
 
-			case github.ReleasePayload:
+			case githubgoo.ReleaseEvent:
 				var buf bytes.Buffer
 				enc := gob.NewEncoder(&buf)
 				err := enc.Encode(payload)
@@ -121,7 +122,7 @@ func main() {
 
 				service.Broadcast(api.Hook_RELEASE, buf.Bytes())
 
-			case github.RegistryPackagePayload:
+			case githubgoo.RegistryPackageEvent:
 				var buf bytes.Buffer
 				enc := gob.NewEncoder(&buf)
 				err := enc.Encode(payload)
