@@ -100,6 +100,7 @@ func main() {
 			switch payload := payload.(type) {
 			case githubgoo.PushEvent:
 				var buf bytes.Buffer
+				gob.Register(githubgoo.PushEvent{})
 				enc := gob.NewEncoder(&buf)
 				err := enc.Encode(payload)
 				if err != nil {
@@ -113,6 +114,7 @@ func main() {
 
 			case githubgoo.ReleaseEvent:
 				var buf bytes.Buffer
+				gob.Register(githubgoo.ReleaseEvent{})
 				enc := gob.NewEncoder(&buf)
 				err := enc.Encode(payload)
 				if err != nil {
@@ -124,6 +126,7 @@ func main() {
 
 			case githubgoo.RegistryPackageEvent:
 				var buf bytes.Buffer
+				gob.Register(githubgoo.RegistryPackageEvent{})
 				enc := gob.NewEncoder(&buf)
 				err := enc.Encode(payload)
 				if err != nil {
