@@ -12,9 +12,7 @@ require (
 	github.com/google/go-github/v81 v81.0.0
 	github.com/hajimehoshi/ebiten/v2 v2.8.8
 	github.com/hajimehoshi/go-mp3 v0.3.4
-	github.com/joho/godotenv v1.5.1
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.9
-	go.senan.xyz/taglib v0.10.4
 	google.golang.org/grpc v1.72.0
 	google.golang.org/protobuf v1.36.6
 )
@@ -75,7 +73,6 @@ require (
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/steveyen/gtreap v0.1.0 // indirect
-	github.com/tetratelabs/wazero v1.9.0 // indirect
 	github.com/tinylib/msgp v1.1.0 // indirect
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
@@ -86,10 +83,10 @@ require (
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
