@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"os/exec"
 	"sync"
 
 	"github.com/bh90210/super/auto/api"
-	"github.com/davecgh/go-spew/spew"
 	githubgoo "github.com/google/go-github/v81/github"
 	"google.golang.org/grpc"
 )
@@ -83,7 +84,6 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 			}
 
 			fmt.Printf("Received push event for repo: %s\n", *payload.Repo.FullName)
-			spew.Dump(payload)
 
 		case api.Hook_REGPACK:
 			var payload githubgoo.RegistryPackageEvent
@@ -93,8 +93,7 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 				continue
 			}
 
-			fmt.Printf("Received package event: %s for package: %s\n", payload.Action, *payload.RegistryPackage.Name)
-			spew.Dump(payload)
+			updateSuper(payload)
 
 		case api.Hook_RELEASE:
 			var payload githubgoo.ReleaseEvent
@@ -105,8 +104,47 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 			}
 
 			fmt.Printf("Received release event for repo: %s, tag: %s\n", payload.Repo.FullName, payload.Release.TagName)
-			spew.Dump(payload)
-
 		}
 	}
+}
+
+func updateSuper(payload githubgoo.RegistryPackageEvent) {
+	// Check is sender is bh90210.
+	if payload.Sender.GetLogin() != "bh90210" {
+		fmt.Printf("Ignoring registry package event from sender: %s\n", payload.Sender.GetLogin())
+		return
+	}
+
+	// Check if package name is super.
+	if payload.RegistryPackage.GetName() != "super" {
+		fmt.Printf("Ignoring registry package event for package: %s\n", payload.RegistryPackage.GetName())
+		return
+	}
+
+	// Check if action is published.
+	if payload.GetAction() != "published" {
+		fmt.Printf("Ignoring registry package event with action: %s\n", payload.GetAction())
+		return
+	}
+
+	// Check if tag is server.latest.
+	if payload.RegistryPackage.PackageVersion.ContainerMetadata.Tag.GetName() != "server.latest" {
+		fmt.Printf("Ignoring registry package event with tag: %s\n", payload.RegistryPackage.PackageVersion.ContainerMetadata.Tag.GetName())
+		return
+	}
+
+	// Get the env viariable and cd in the super directory.
+	superPath := os.Getenv("SUPER_PATH")
+
+	// Run a command to pull the latest image and deploy it.
+	lsCmd := exec.Command("bash", "-c", "docker compose pull && docker compose up -d --remove-orphans")
+	// Change directory to superPath.
+	lsCmd.Dir = superPath
+	lsOut, err := lsCmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Could not run docker pull and deploy: %v", err)
+		return
+	}
+
+	fmt.Println(string(lsOut))
 }
