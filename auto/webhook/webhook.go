@@ -3,7 +3,6 @@ package webhook
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -75,17 +74,17 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 			var payload githubgoo.PushEvent
 			err = json.Unmarshal(resp.Data, &payload)
 			if err != nil {
-				fmt.Printf("Could not decode payload: %v\n", err)
+				log.Printf("Could not decode payload: %v\n", err)
 				continue
 			}
 
-			fmt.Printf("Received push event for repo: %s\n", *payload.Repo.FullName)
+			log.Printf("Received push event for repo: %s\n", *payload.Repo.FullName)
 
 		case api.Hook_REGPACK:
 			var payload githubgoo.RegistryPackageEvent
 			err = json.Unmarshal(resp.Data, &payload)
 			if err != nil {
-				fmt.Printf("Could not decode payload: %v\n", err)
+				log.Printf("Could not decode payload: %v\n", err)
 				continue
 			}
 
@@ -95,11 +94,11 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 			var payload githubgoo.ReleaseEvent
 			err = json.Unmarshal(resp.Data, &payload)
 			if err != nil {
-				fmt.Printf("Could not decode payload: %v\n", err)
+				log.Printf("Could not decode payload: %v\n", err)
 				continue
 			}
 
-			fmt.Printf("Received release event for repo: %s, tag: %s\n", payload.Repo.FullName, payload.Release.TagName)
+			log.Printf("Received release event for repo: %s, tag: %s\n", payload.Repo.FullName, payload.Release.TagName)
 		}
 	}
 }
@@ -107,25 +106,25 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 func updateSuper(payload githubgoo.RegistryPackageEvent) {
 	// Check is sender is bh90210.
 	if payload.Sender.GetLogin() != "bh90210" {
-		fmt.Printf("Ignoring registry package event from sender: %s\n", payload.Sender.GetLogin())
+		log.Printf("Ignoring registry package event from sender: %s\n", payload.Sender.GetLogin())
 		return
 	}
 
 	// Check if package name is server.
 	if payload.RegistryPackage.GetName() != "server" {
-		fmt.Printf("Ignoring registry package event for package: %s\n", payload.RegistryPackage.GetName())
+		log.Printf("Ignoring registry package event for package: %s\n", payload.RegistryPackage.GetName())
 		return
 	}
 
 	// Check if action is published.
 	if payload.GetAction() != "published" {
-		fmt.Printf("Ignoring registry package event with action: %s\n", payload.GetAction())
+		log.Printf("Ignoring registry package event with action: %s\n", payload.GetAction())
 		return
 	}
 
 	// Check if tag is server.latest.
 	if payload.RegistryPackage.PackageVersion.ContainerMetadata.Tag.GetName() != "latest" {
-		fmt.Printf("Ignoring registry package event with tag: %s\n", payload.RegistryPackage.PackageVersion.ContainerMetadata.Tag.GetName())
+		log.Printf("Ignoring registry package event with tag: %s\n", payload.RegistryPackage.PackageVersion.ContainerMetadata.Tag.GetName())
 		return
 	}
 
@@ -141,7 +140,7 @@ func updateSuper(payload githubgoo.RegistryPackageEvent) {
 		return
 	}
 
-	fmt.Println(string(lsOut))
+	log.Println(string(lsOut))
 
 	lsCmd = exec.Command("docker", "compose", "up", "-d")
 	lsCmd.Dir = superPath
@@ -151,5 +150,5 @@ func updateSuper(payload githubgoo.RegistryPackageEvent) {
 		return
 	}
 
-	fmt.Println(string(lsOut))
+	log.Println(string(lsOut))
 }
