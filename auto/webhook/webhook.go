@@ -137,12 +137,21 @@ func updateSuper(payload githubgoo.RegistryPackageEvent) {
 	superPath := os.Getenv("SUPER_PATH")
 
 	// Run a command to pull the latest image and deploy it.
-	lsCmd := exec.Command("bash", "-c", "docker compose pull && docker compose up -d --remove-orphans")
-	// Change directory to superPath.
+	lsCmd := exec.Command("docker", "compose", "pull")
 	lsCmd.Dir = superPath
 	lsOut, err := lsCmd.CombinedOutput()
 	if err != nil {
-		log.Printf("Could not run docker pull and deploy: %v", err)
+		log.Printf("Could not run docker pull: %v, %s", err, string(lsOut))
+		return
+	}
+
+	fmt.Println(string(lsOut))
+
+	lsCmd = exec.Command("docker", "compose", "up", "-d")
+	lsCmd.Dir = superPath
+	lsOut, err = lsCmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Could not run docker up: %v, %s", err, string(lsOut))
 		return
 	}
 
