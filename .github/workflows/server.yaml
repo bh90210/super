@@ -6,8 +6,8 @@ on:
       - server.**
 
 permissions:
-  contents: read
-  packages: write
+  contents: write
+  # packages: write
 
 env:
   REGISTRY: ghcr.io
