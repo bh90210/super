@@ -4,6 +4,7 @@ Description=Auto (super) client service
 [Service]
 Restart=always
 RestartSec=5
+EnvironmentFile=/path/to/env
 ExecStart=/home/byron/super/auto/auto --server=false
 
 [Install]
