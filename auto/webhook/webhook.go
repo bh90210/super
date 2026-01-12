@@ -105,7 +105,7 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 
 func updateSuper(payload githubgoo.RegistryPackageEvent) {
 	// Check is sender is bh90210.
-	if payload.Sender.GetLogin() != "bh90210" {
+	if payload.Sender.GetLogin() != "github-actions[bot]" {
 		log.Printf("Ignoring registry package event from sender: %s\n", payload.Sender.GetLogin())
 		return
 	}
