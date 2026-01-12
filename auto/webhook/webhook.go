@@ -90,7 +90,7 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 			spew.Dump(payload)
 
 		case api.Hook_REGPACK:
-			var payload RegistryPackageEvent
+			var payload github.RegistryPackagePayload
 			err = dec.Decode(&payload)
 			if err != nil {
 				fmt.Printf("Could not decode payload: %v\n", err)

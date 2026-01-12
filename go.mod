@@ -94,3 +94,4 @@ require (
 )
 
 // replace github.com/wailsapp/wails/v3 => github.com/bh90210/wails/v3 v3.0.0-alpha.10
+replace github.com/go-playground/webhooks/v6 => github.com/bh90210/webhooks/v6 v6.5.0
