@@ -10,7 +10,7 @@ import (
 
 	"github.com/bh90210/super/auto/api"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/go-playground/webhooks/v6/github"
+	githubgoo "github.com/google/go-github/v81/github"
 	"google.golang.org/grpc"
 )
 
@@ -79,90 +79,38 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 
 		switch resp.Hooktype.Type {
 		case api.Hook_PUSH:
-			var payload github.PushPayload
+			var payload githubgoo.PushEvent
 			err = dec.Decode(&payload)
 			if err != nil {
 				fmt.Printf("Could not decode payload: %v\n", err)
 				continue
 			}
 
-			fmt.Printf("Received push event for repo: %s\n", payload.Repository.FullName)
+			fmt.Printf("Received push event for repo: %s\n", *payload.Repo.FullName)
 			spew.Dump(payload)
 
 		case api.Hook_REGPACK:
-			var payload github.RegistryPackagePayload
+			var payload githubgoo.RegistryPackageEvent
 			err = dec.Decode(&payload)
 			if err != nil {
 				fmt.Printf("Could not decode payload: %v\n", err)
 				continue
 			}
 
-			fmt.Printf("Received package event: %s for package: %s\n", payload.Action, payload.Package.Name)
+			fmt.Printf("Received package event: %s for package: %s\n", payload.Action, *payload.RegistryPackage.Name)
 			spew.Dump(payload)
 
 		case api.Hook_RELEASE:
-			var payload github.ReleasePayload
+			var payload githubgoo.ReleaseEvent
 			err = dec.Decode(&payload)
 			if err != nil {
 				fmt.Printf("Could not decode payload: %v\n", err)
 				continue
 			}
 
-			fmt.Printf("Received release event for repo: %s, tag: %s\n", payload.Repository.FullName, payload.Release.TagName)
+			fmt.Printf("Received release event for repo: %s, tag: %s\n", payload.Repo.FullName, payload.Release.TagName)
 			spew.Dump(payload)
 
 		}
 	}
-}
-
-// RegistryPackageEvent represents the GitHub "package" webhook payload.
-// X-GitHub-Event: package
-type RegistryPackageEvent struct {
-	Action       string        `json:"action"`                 // published, updated, deleted
-	Package      Package       `json:"package"`                // Package metadata
-	Organization *Organization `json:"organization,omitempty"` // Present for org-owned packages
-	Sender       User          `json:"sender"`                 // Actor that triggered the event
-}
-
-// Package represents a GitHub Package (npm, container, maven, etc.)
-type Package struct {
-	ID             int64           `json:"id"`
-	Name           string          `json:"name"`
-	PackageType    string          `json:"package_type"` // npm, maven, container, nuget, rubygems
-	HTMLURL        string          `json:"html_url"`
-	CreatedAt      string          `json:"created_at"` // ISO-8601 timestamp
-	UpdatedAt      string          `json:"updated_at"` // ISO-8601 timestamp
-	Owner          User            `json:"owner"`
-	PackageVersion *PackageVersion `json:"package_version,omitempty"` // Nil on delete
-}
-
-// PackageVersion represents a specific version of a package.
-type PackageVersion struct {
-	ID          int64           `json:"id"`
-	Name        string          `json:"name"` // Version or digest
-	Description string          `json:"description"`
-	Summary     string          `json:"summary"`
-	Body        string          `json:"body"`
-	HTMLURL     string          `json:"html_url"`
-	CreatedAt   string          `json:"created_at"` // ISO-8601 timestamp
-	UpdatedAt   string          `json:"updated_at"` // ISO-8601 timestamp
-	Metadata    PackageMetadata `json:"metadata"`
-}
-
-// PackageMetadata holds registry-specific metadata.
-type PackageMetadata struct {
-	PackageType string `json:"package_type"` // npm, container, etc.
-}
-
-// Organization represents a GitHub organization.
-type Organization struct {
-	Login string `json:"login"`
-	ID    int64  `json:"id"`
-}
-
-// User represents a GitHub user or organization account.
-type User struct {
-	Login string `json:"login"`
-	ID    int64  `json:"id"`
-	Type  string `json:"type"` // User or Organization
 }

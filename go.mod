@@ -10,6 +10,7 @@ require (
 	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 	github.com/ebitengine/oto/v3 v3.3.3
 	github.com/go-playground/webhooks/v6 v6.4.0
+	github.com/google/go-github/v81 v81.0.0
 	github.com/hajimehoshi/ebiten/v2 v2.8.8
 	github.com/hajimehoshi/go-mp3 v0.3.4
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.9
@@ -54,6 +55,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect
@@ -94,4 +96,4 @@ require (
 )
 
 // replace github.com/wailsapp/wails/v3 => github.com/bh90210/wails/v3 v3.0.0-alpha.10
-replace github.com/go-playground/webhooks/v6 => github.com/bh90210/webhooks/v6 v6.5.0
+replace github.com/go-playground/webhooks/v6 => github.com/bh90210/webhooks/v6 v6.5.2
