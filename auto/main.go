@@ -60,6 +60,9 @@ func main() {
 		// // And once more...
 		// opsQueued.Dec()
 		// recordMetrics()
+
+		slog.Info("starting metrics server on :2112")
+
 		http.Handle(metricsPath, promhttp.Handler())
 		http.ListenAndServe(":2112", nil)
 	}()
@@ -118,6 +121,8 @@ func main() {
 				slog.Error("failed to listen", slog.String("error", err.Error()))
 				return
 			}
+
+			slog.Info("gRPC server started on :3005")
 
 			if err := grpcServer.Serve(lis); err != nil {
 				slog.Error("failed to serve", slog.String("error", err.Error()))
