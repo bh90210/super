@@ -9,12 +9,12 @@ RUN go mod download
 
 COPY . .
 
-WORKDIR /src/super/server
+WORKDIR /src/server
 RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 \
     go build -o /out/server .
 
 FROM scratch
 WORKDIR /super
-COPY --from=builder /src/super/server/server ./server
+COPY --from=builder /src/server/server ./server
 EXPOSE 8888
 ENTRYPOINT ["./server"]
