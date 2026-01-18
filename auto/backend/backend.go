@@ -87,7 +87,9 @@ func GithubHandle(hook *github.Webhook) func(w http.ResponseWriter, r *http.Requ
 }
 
 func updateSuper(payload githubgoo.RegistryPackageEvent) {
-	defer m.updateSuper.Reset()
+	defer m.updateSuper.With(prometheus.Labels{
+		"status": "finished",
+	}).Set(0)
 
 	// Check is sender is bh90210.
 	if payload.Sender.GetLogin() != "github-actions[bot]" {
