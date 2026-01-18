@@ -15,6 +15,6 @@ RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 \
 
 FROM scratch
 WORKDIR /super
-COPY --from=builder /src/server/server ./server
+COPY --from=builder /out/server ./server
 EXPOSE 8888
 ENTRYPOINT ["./server"]
