@@ -4,17 +4,19 @@
 package backend
 
 import (
-	"encoding/json"
+	"errors"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/exec"
 
-	"github.com/bh90210/super/auto/api"
+	"github.com/go-playground/webhooks/v6/github"
 	githubgoo "github.com/google/go-github/v81/github"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"google.golang.org/grpc"
 )
+
+const T = "auto_backend"
 
 type metrics struct {
 	gihubWebhook *prometheus.GaugeVec
@@ -41,52 +43,32 @@ func init() {
 	)
 }
 
-func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
-	for {
-		resp, err := w.Recv()
+func GithubHandle(hook *github.Webhook) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Parse the webhook payload.
+		payload, err := hook.Parse(r, github.PushEvent, github.ReleaseEvent, github.RegistryPackageEvent)
 		if err != nil {
-			slog.Error("could not receive webhook response", slog.String("error", err.Error()))
-			return err
+			if errors.Is(err, github.ErrEventNotFound) {
+				slog.Error("ignoring unsupported event type")
+				return
+			}
+
+			slog.Error("could not parse webhook", slog.String("error", err.Error()))
+			return
 		}
 
-		m.gihubWebhook.With(prometheus.Labels{
-			"type": resp.Hooktype.Type.String(),
-		}).Inc()
-
-		defer m.gihubWebhook.With(prometheus.Labels{
-			"type": resp.Hooktype.Type.String(),
-		}).Dec()
-
-		switch resp.Hooktype.Type {
-		case api.Hook_PUSH:
-			var payload githubgoo.PushEvent
-			err = json.Unmarshal(resp.Data, &payload)
-			if err != nil {
-				slog.Error("could not decode payload", slog.String("error", err.Error()))
-				continue
-			}
-
+		// Decide what to do based on event type.
+		// Then marshal the payload and broadcast it to the backend host running service.
+		switch payload := payload.(type) {
+		case githubgoo.PushEvent:
 			slog.Info("Received push event for repo", slog.String("repo", *payload.Repo.FullName))
 
-		case api.Hook_REGPACK:
-			var payload githubgoo.RegistryPackageEvent
-			err = json.Unmarshal(resp.Data, &payload)
-			if err != nil {
-				slog.Error("could not decode payload", slog.String("error", err.Error()))
-				continue
-			}
-
-			updateSuper(payload)
-
-		case api.Hook_RELEASE:
-			var payload githubgoo.ReleaseEvent
-			err = json.Unmarshal(resp.Data, &payload)
-			if err != nil {
-				slog.Error("could not decode payload", slog.String("error", err.Error()))
-				continue
-			}
-
+		case githubgoo.ReleaseEvent:
 			slog.Info("Received release event for repo", slog.String("repo", *payload.Repo.FullName), slog.String("tag", *payload.Release.TagName))
+
+		case githubgoo.RegistryPackageEvent:
+			slog.Info("Received registry package event for package", slog.String("package", payload.RegistryPackage.GetName()))
+			updateSuper(payload)
 		}
 	}
 }
@@ -153,18 +135,7 @@ func updateSuper(payload githubgoo.RegistryPackageEvent) {
 	slog.Info("Updating super from registry package webhook event")
 
 	// Get the env viariable and cd in the super directory.
-	superPathFile := os.Getenv("SUPER_PATH")
-	dat, err := os.ReadFile(superPathFile)
-	if err != nil {
-		m.updateSuper.With(prometheus.Labels{
-			"status": "could_not_read_super_path",
-		}).Set(-1)
-
-		slog.Error("could not read super path file", slog.String("error", err.Error()))
-		return
-	}
-
-	superServerPath := string(dat)
+	superServerPath := os.Getenv("SUPER_PATH")
 
 	// Run a command to pull the latest image and deploy it.
 	lsCmd := exec.Command("docker", "pull", "ghcr.io/bh90210/server:latest")

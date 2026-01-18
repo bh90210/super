@@ -8,7 +8,7 @@ require (
 	github.com/dgraph-io/badger/v4 v4.7.0
 	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 	github.com/ebitengine/oto/v3 v3.3.3
-	github.com/go-playground/webhooks/v6 v6.4.0
+	github.com/go-playground/webhooks/v6 v6.0.0-00010101000000-000000000000
 	github.com/google/go-github/v81 v81.0.0
 	github.com/hajimehoshi/ebiten/v2 v2.8.8
 	github.com/hajimehoshi/go-mp3 v0.3.4
