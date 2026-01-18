@@ -44,10 +44,10 @@ func main() {
 				return
 			}
 
-			slog.Info("server started on :3000")
+			slog.Info("server started on :3005")
 
 			http.Handle(githubPath, http.HandlerFunc(backend.GithubHandle(hook)))
-			http.ListenAndServe(":3000", nil)
+			http.ListenAndServe(":3005", nil)
 		}
 
 	// Proxy mode: just pass through requests to the backend service.
@@ -56,7 +56,7 @@ func main() {
 
 		http.Handle(githubPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Forward the request to the backend server
-			proxyURL := "http://super1:3000" + r.URL.Path
+			proxyURL := "http://super1:3005" + r.URL.Path
 
 			// Create a new request with the same method and body
 			proxyReq, err := http.NewRequestWithContext(r.Context(), r.Method, proxyURL, r.Body)
