@@ -13,4 +13,4 @@ http:
     auto:
       loadBalancer:
         servers:
-        - url: "http://super1:3005/"
+        - url: "http://localhost:3005/"
