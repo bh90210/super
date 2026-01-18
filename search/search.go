@@ -12,7 +12,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/bh90210/super/api"
+	"github.com/bh90210/super/server/api"
 	"github.com/bh90210/super/super"
 	"github.com/blevesearch/bleve"
 	badger "github.com/dgraph-io/badger/v4"

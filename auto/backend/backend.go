@@ -16,8 +16,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-const T = "auto_backend"
-
 type metrics struct {
 	gihubWebhook *prometheus.GaugeVec
 	updateSuper  *prometheus.GaugeVec
@@ -36,8 +34,8 @@ func init() {
 
 	m.updateSuper = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "auto_backend_update_super_total",
-			Help: "The total number of times super was updated from registry package webhook.",
+			Name: "auto_backend_update_super",
+			Help: "The stepwise status of updating to latest version of super server from github registry package webhook.",
 		},
 		[]string{"status"},
 	)

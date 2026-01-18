@@ -3,13 +3,11 @@ ARG TARGETOS
 ARG TARGETARCH
 
 WORKDIR /src
-
-COPY go.mod go.sum ./
-RUN go mod download
-
 COPY . .
 
-WORKDIR /src/server
+RUN go mod init github.com/bh90210/super/server
+RUN go mod tidy
+
 RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 \
     go build -o /out/server .
 

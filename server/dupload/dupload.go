@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/bh90210/super/api"
+	"github.com/bh90210/super/server/api"
 )
 
 var _ api.DuploadServer = (*Service)(nil)

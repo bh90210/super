@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bh90210/super/api"
 	"github.com/bh90210/super/player"
 	"github.com/bh90210/super/search"
+	"github.com/bh90210/super/server/api"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 

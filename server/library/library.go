@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bh90210/super/api"
+	"github.com/bh90210/super/server/api"
 	"github.com/charlievieth/fastwalk"
 	"github.com/dhowden/tag"
 	"github.com/hajimehoshi/go-mp3"

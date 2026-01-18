@@ -15,8 +15,6 @@ const (
 	prometheusPath = "/metrics"
 )
 
-var _ = backend.T
-
 func main() {
 	// Intitiate prometheus metrics server.
 	go func() {
@@ -35,8 +33,9 @@ func main() {
 		return
 	}
 
+	http.Handle(githubPath, http.HandlerFunc(backend.GithubHandle(hook)))
+
 	slog.Info("server started on :3005")
 
-	http.Handle(githubPath, http.HandlerFunc(backend.GithubHandle(hook)))
 	http.ListenAndServe(":3005", nil)
 }

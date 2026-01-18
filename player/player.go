@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/bh90210/super/api"
+	"github.com/bh90210/super/server/api"
 	"github.com/bh90210/super/super"
 	"github.com/ebitengine/oto/v3"
 	"github.com/hajimehoshi/ebiten/v2/audio/wav"
