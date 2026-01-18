@@ -11,7 +11,6 @@ import (
 	"github.com/bh90210/super/auto/api"
 	"github.com/go-playground/webhooks/v6/github"
 	githubgoo "github.com/google/go-github/v81/github"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 var _ api.GithubServer = (*Service)(nil)
@@ -19,20 +18,12 @@ var _ api.GithubServer = (*Service)(nil)
 type Service struct {
 	api.UnimplementedGithubServer
 
-	metrics
-
 	stream api.Github_WebhookServer
 	wg     *sync.WaitGroup
 	mu     sync.Mutex
 }
 
-type metrics struct {
-	opsProcessed prometheus.Counter
-}
-
 func NewService() (*Service, error) {
-	// Initialize any metrics here.
-
 	return &Service{}, nil
 }
 
