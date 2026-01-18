@@ -56,7 +56,7 @@ func main() {
 
 		http.Handle(githubPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Forward the request to the backend server
-			proxyURL := "http://super1:3005" + r.URL.Path
+			proxyURL := "http://super1:3005" + githubPath
 
 			// Create a new request with the same method and body
 			proxyReq, err := http.NewRequestWithContext(r.Context(), r.Method, proxyURL, r.Body)
