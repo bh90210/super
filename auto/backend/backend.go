@@ -169,7 +169,7 @@ func updateSuper(payload githubgoo.RegistryPackageEvent) {
 
 	slog.Info("docker pull output", slog.String("output", string(lsOut)))
 
-	lsCmd = exec.Command("docker", "stack", "-c", "docker-swarm.yml", "deploy", "super", "--with-registry-auth")
+	lsCmd = exec.Command("docker", "stack", "deploy", "-c", "docker-swarm.yaml", "super")
 	lsCmd.Dir = superServerPath
 	lsOut, err = lsCmd.CombinedOutput()
 	if err != nil {
