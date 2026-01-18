@@ -23,44 +23,12 @@ const (
 	metricsPath = "/metrics"
 )
 
-// func recordMetrics() {
-// 	go func() {
-// 		for {
-// 			opsProcessed.Inc()
-// 			time.Sleep(2 * time.Second)
-// 		}
-// 	}()
-// }
-
-// var (
-// 	opsProcessed = promauto.NewCounter(prometheus.CounterOpts{
-// 		Name: "myapp_processed_ops_total",
-// 		Help: "The total number of processed events",
-// 	})
-// )
-
 func main() {
 	isServer := flag.Bool("server", true, "Run as server. Default is true.")
 	flag.Parse()
 
 	// Intitiate prometheus metrics server.
 	go func() {
-		// opsQueued := prometheus.NewGauge(prometheus.GaugeOpts{
-		// 	Namespace: "our_company",
-		// 	Subsystem: "blob_storage",
-		// 	Name:      "ops_queued",
-		// 	Help:      "Number of blob storage operations waiting to be processed.",
-		// })
-		// prometheus.MustRegister(opsQueued)
-
-		// // 10 operations queued by the goroutine managing incoming requests.
-		// opsQueued.Add(10)
-		// // A worker goroutine has picked up a waiting operation.
-		// opsQueued.Dec()
-		// // And once more...
-		// opsQueued.Dec()
-		// recordMetrics()
-
 		slog.Info("starting metrics server on :2112")
 
 		http.Handle(metricsPath, promhttp.Handler())
@@ -90,6 +58,8 @@ func main() {
 				time.Sleep(2 * time.Second)
 				continue
 			}
+
+			slog.Info("connected to webhook server, waiting for events...")
 
 			// Deal with with incoming webhook events. If end of stream is reached, reconnect.
 			err = backend.GithubWebhook(w)

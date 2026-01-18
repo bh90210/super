@@ -12,17 +12,33 @@ import (
 	"github.com/bh90210/super/auto/api"
 	githubgoo "github.com/google/go-github/v81/github"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"google.golang.org/grpc"
 )
 
 type metrics struct {
-	opsProcessed prometheus.Counter
+	gihubWebhook *prometheus.GaugeVec
+	updateSuper  *prometheus.GaugeVec
 }
 
 var m metrics
 
 func init() {
+	m.gihubWebhook = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "auto_backend_github_webhook_total",
+			Help: "The total number of github webhooks received by type.",
+		},
+		[]string{"type"},
+	)
 
+	m.updateSuper = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "auto_backend_update_super_total",
+			Help: "The total number of times super was updated from registry package webhook.",
+		},
+		[]string{"status"},
+	)
 }
 
 func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
@@ -32,6 +48,14 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 			slog.Error("could not receive webhook response", slog.String("error", err.Error()))
 			return err
 		}
+
+		m.gihubWebhook.With(prometheus.Labels{
+			"type": resp.Hooktype.Type.String(),
+		}).Inc()
+
+		defer m.gihubWebhook.With(prometheus.Labels{
+			"type": resp.Hooktype.Type.String(),
+		}).Dec()
 
 		switch resp.Hooktype.Type {
 		case api.Hook_PUSH:
@@ -68,58 +92,114 @@ func GithubWebhook(w grpc.ServerStreamingClient[api.WebhookResponse]) error {
 }
 
 func updateSuper(payload githubgoo.RegistryPackageEvent) {
+	defer m.updateSuper.Reset()
+
 	// Check is sender is bh90210.
 	if payload.Sender.GetLogin() != "github-actions[bot]" {
+		m.updateSuper.With(prometheus.Labels{
+			"status": "invalid_sender",
+		}).Set(-1)
+
 		slog.Info("Ignoring registry package event from sender", slog.String("sender", payload.Sender.GetLogin()))
 		return
 	}
 
+	m.updateSuper.With(prometheus.Labels{
+		"status": "started",
+	}).Inc()
+
 	// Check if package name is server.
 	if payload.RegistryPackage.GetName() != "server" {
+		m.updateSuper.With(prometheus.Labels{
+			"status": "invalid_package",
+		}).Set(-1)
+
 		slog.Info("Ignoring registry package event for package", slog.String("package", payload.RegistryPackage.GetName()))
 		return
 	}
 
+	m.updateSuper.With(prometheus.Labels{
+		"status": "valid_package",
+	}).Inc()
+
 	// Check if action is published.
 	if payload.GetAction() != "published" {
+		m.updateSuper.With(prometheus.Labels{
+			"status": "invalid_action",
+		}).Set(-1)
+
 		slog.Info("Ignoring registry package event with action", slog.String("action", payload.GetAction()))
 		return
 	}
 
+	m.updateSuper.With(prometheus.Labels{
+		"status": "valid_action",
+	}).Inc()
+
 	// Check if tag is server:latest.
 	if payload.RegistryPackage.PackageVersion.ContainerMetadata.Tag.GetName() != "latest" {
+		m.updateSuper.With(prometheus.Labels{
+			"status": "invalid_tag",
+		}).Set(-1)
+
 		slog.Info("Ignoring registry package event with tag", slog.String("tag", payload.RegistryPackage.PackageVersion.ContainerMetadata.Tag.GetName()))
 		return
 	}
+
+	m.updateSuper.With(prometheus.Labels{
+		"status": "valid_tag",
+	}).Inc()
+
+	slog.Info("Updating super from registry package webhook event")
 
 	// Get the env viariable and cd in the super directory.
 	superPathFile := os.Getenv("SUPER_PATH")
 	dat, err := os.ReadFile(superPathFile)
 	if err != nil {
+		m.updateSuper.With(prometheus.Labels{
+			"status": "could_not_read_super_path",
+		}).Set(-1)
+
 		slog.Error("could not read super path file", slog.String("error", err.Error()))
 		return
 	}
 
-	superPath := string(dat)
+	superServerPath := string(dat)
 
 	// Run a command to pull the latest image and deploy it.
-	lsCmd := exec.Command("docker", "compose", "pull")
-	lsCmd.Dir = superPath
+	lsCmd := exec.Command("docker", "pull", "ghcr.io/bh90210/server:latest")
+	lsCmd.Dir = superServerPath
 	lsOut, err := lsCmd.CombinedOutput()
 	if err != nil {
+		m.updateSuper.With(prometheus.Labels{
+			"status": "could_not_pull_latest_image",
+		}).Set(-1)
+
 		slog.Error("could not run docker pull", slog.String("error", err.Error()), slog.String("output", string(lsOut)))
 		return
 	}
 
+	m.updateSuper.With(prometheus.Labels{
+		"status": "latest_image_pulled",
+	}).Inc()
+
 	slog.Info("docker pull output", slog.String("output", string(lsOut)))
 
-	lsCmd = exec.Command("docker", "compose", "up", "-d")
-	lsCmd.Dir = superPath
+	lsCmd = exec.Command("docker", "stack", "-c", "docker-swarm.yml", "deploy", "super", "--with-registry-auth")
+	lsCmd.Dir = superServerPath
 	lsOut, err = lsCmd.CombinedOutput()
 	if err != nil {
-		slog.Error("could not run docker up", slog.String("error", err.Error()), slog.String("output", string(lsOut)))
+		m.updateSuper.With(prometheus.Labels{
+			"status": "could_not_deploy",
+		}).Set(-1)
+
+		slog.Error("could not run docker swarm deploy", slog.String("error", err.Error()), slog.String("output", string(lsOut)))
 		return
 	}
 
-	slog.Info("docker up output", slog.String("output", string(lsOut)))
+	m.updateSuper.With(prometheus.Labels{
+		"status": "super_updated",
+	}).Inc()
+
+	slog.Info("docker swarm deploy output", slog.String("output", string(lsOut)))
 }
