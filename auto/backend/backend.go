@@ -61,9 +61,22 @@ func GithubHandle(hook *github.Webhook) func(w http.ResponseWriter, r *http.Requ
 		// Then marshal the payload and broadcast it to the backend host running service.
 		switch payload := payload.(type) {
 		case githubgoo.PushEvent:
+			g := m.gihubWebhook.With(prometheus.Labels{
+				"type": "push",
+			})
+			defer g.Dec()
+
+			g.Inc()
+
 			slog.Info("Received push event for repo", slog.String("repo", *payload.Repo.FullName))
 
 		case githubgoo.ReleaseEvent:
+			g := m.gihubWebhook.With(prometheus.Labels{
+				"type": "release",
+			})
+			defer g.Dec()
+
+			g.Inc()
 			slog.Info("Received release event for repo", slog.String("repo", *payload.Repo.FullName), slog.String("tag", *payload.Release.TagName))
 
 		case githubgoo.RegistryPackageEvent:
