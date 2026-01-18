@@ -48,7 +48,6 @@ func main() {
 
 			http.Handle(githubPath, http.HandlerFunc(backend.GithubHandle(hook)))
 			http.ListenAndServe(":3000", nil)
-
 		}
 
 	// Proxy mode: just pass through requests to the backend service.
