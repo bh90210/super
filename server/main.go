@@ -36,23 +36,6 @@ func main() {
 		log.Fatalf("failed to create dupload service: %v", err)
 	}
 
-	// // Read cert and key file
-	// backendCert, err := os.ReadFile("/server.pem")
-	// if err != nil {
-	// 	log.Fatalf("failed to read certificate file: %v", err)
-	// }
-
-	// backendKey, err := os.ReadFile("/server-key.pem")
-	// if err != nil {
-	// 	log.Fatalf("failed to read key file: %v", err)
-	// }
-
-	// // Generate Certificate struct
-	// cert, err := tls.X509KeyPair(backendCert, backendKey)
-	// if err != nil {
-	// 	log.Fatalf("failed to parse certificate: %v", err)
-	// }
-
 	// Create credentials
 	creds, err := credentials.NewServerTLSFromFile("/server.pem", "/server-key.pem")
 	if err != nil {
