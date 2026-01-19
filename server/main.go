@@ -44,10 +44,8 @@ func main() {
 
 	// Use Credentials in gRPC server options
 	serverOption := grpc.Creds(creds)
-	var s *grpc.Server = grpc.NewServer(serverOption)
-	defer s.Stop()
+	grpcServer := grpc.NewServer(serverOption)
 
-	grpcServer := grpc.NewServer()
 	api.RegisterLibraryServer(grpcServer, libraryService)
 	api.RegisterDuploadServer(grpcServer, duploadService)
 
