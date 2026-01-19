@@ -1,15 +1,18 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"log"
 	"log/slog"
 	"net"
+	"os"
 
 	"github.com/bh90210/super/server/api"
 	"github.com/bh90210/super/server/dupload"
 	"github.com/bh90210/super/server/library"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 func main() {
@@ -35,7 +38,24 @@ func main() {
 		log.Fatalf("failed to create dupload service: %v", err)
 	}
 
-	// creds, err := credentials.NewClientTLSFromFile("roots.pem", "")
+	// Read cert and key file
+	backendCert, _ := os.ReadFile("/server.pem")
+	backendKey, _ := os.ReadFile("/server-key.pem")
+
+	// Generate Certificate struct
+	cert, err := tls.X509KeyPair(backendCert, backendKey)
+	if err != nil {
+		log.Fatalf("failed to parse certificate: %v", err)
+	}
+
+	// Create credentials
+	creds := credentials.NewServerTLSFromCert(&cert)
+
+	// Use Credentials in gRPC server options
+	serverOption := grpc.Creds(creds)
+	var s *grpc.Server = grpc.NewServer(serverOption)
+	defer s.Stop()
+
 	grpcServer := grpc.NewServer()
 	api.RegisterLibraryServer(grpcServer, libraryService)
 	api.RegisterDuploadServer(grpcServer, duploadService)
