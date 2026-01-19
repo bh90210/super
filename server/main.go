@@ -39,8 +39,15 @@ func main() {
 	}
 
 	// Read cert and key file
-	backendCert, _ := os.ReadFile("/server.pem")
-	backendKey, _ := os.ReadFile("/server-key.pem")
+	backendCert, err := os.ReadFile("/server.pem")
+	if err != nil {
+		log.Fatalf("failed to read certificate file: %v", err)
+	}
+
+	backendKey, err := os.ReadFile("/server-key.pem")
+	if err != nil {
+		log.Fatalf("failed to read key file: %v", err)
+	}
 
 	// Generate Certificate struct
 	cert, err := tls.X509KeyPair(backendCert, backendKey)
