@@ -12,9 +12,9 @@ require (
 	github.com/google/go-github/v81 v81.0.0
 	github.com/hajimehoshi/ebiten/v2 v2.8.8
 	github.com/hajimehoshi/go-mp3 v0.3.4
+	github.com/johnsiilver/getcert v0.0.0-20201005022436-57fe9706afac
 	github.com/prometheus/client_golang v1.23.2
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.9
-	go.senan.xyz/taglib v0.11.1
 	google.golang.org/grpc v1.72.0
 	google.golang.org/protobuf v1.36.8
 )
@@ -80,7 +80,6 @@ require (
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/steveyen/gtreap v0.1.0 // indirect
-	github.com/tetratelabs/wazero v1.10.1 // indirect
 	github.com/tinylib/msgp v1.1.0 // indirect
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
