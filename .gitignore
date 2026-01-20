@@ -6,4 +6,4 @@ build/linux/appimage/build
 build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 byron/*
 .env
-auto/Taskfile.yaml
+auto/*
