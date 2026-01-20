@@ -24,6 +24,7 @@ func main() {
 	cert := flag.String("cert", "", "Certificate path")
 	key := flag.String("key", "", "Key path")
 	port := flag.Int("port", 8888, "Port to listen on")
+	metricsPort := flag.Int("metrics-port", 2112, "Port for prometheus metrics")
 	address := flag.String("address", "0.0.0.0", "Address to listen on")
 	dgraphAddr := flag.String("dgraph", "", "Comma-separated list of Dgraph addresses")
 	flag.Parse()
@@ -67,10 +68,10 @@ func main() {
 
 	// Open prometheus metrics endpoint.
 	go func() {
-		slog.Info("starting metrics server on :2112")
+		slog.Info("starting metrics server on :" + strconv.Itoa(*metricsPort))
 
 		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(":2112", nil)
+		http.ListenAndServe(":"+strconv.Itoa(*metricsPort), nil)
 	}()
 
 	// Start backend service.
