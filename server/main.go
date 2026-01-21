@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,8 @@ import (
 	"github.com/bh90210/super/server/dupload"
 	"github.com/bh90210/super/server/library"
 	dgo "github.com/dgraph-io/dgo/v250"
+	"github.com/minio/minio-go/v7"
+	miniocreds "github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -27,6 +30,10 @@ func main() {
 	metricsPort := flag.Int("metrics-port", 2112, "Port for prometheus metrics")
 	address := flag.String("address", "0.0.0.0", "Address to listen on")
 	dgraphAddr := flag.String("dgraph", "", "Comma-separated list of Dgraph addresses")
+	minioEndpoint := flag.String("minio-endpoint", "", "Minio server endpoint")
+	minioUser := flag.String("minio-user", "", "Minio access key ID")
+	minioPass := flag.String("minio-pass", "", "Minio secret access key")
+	miniossl := flag.Bool("minio-ssl", false, "Use SSL for Minio connection")
 	flag.Parse()
 
 	// Connect to dgraph database.
@@ -50,21 +57,23 @@ func main() {
 	}
 
 	// Connect to minio server.
-	// endpoint := "play.min.io"
-	// accessKeyID := "Q3AM3UQ867SPQQA43P2F"
-	// secretAccessKey := "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG"
-	// useSSL := true
+	data, err := os.ReadFile(*minioPass)
+	if err != nil {
+		log.Fatalf("failed to read minio password file: %v", err)
+	}
 
-	// // Initialize minio client object.
-	// minioClient, err := minio.New(endpoint, &minio.Options{
-	// 	Creds:  minioCreds.NewStaticV4(accessKeyID, secretAccessKey, ""),
-	// 	Secure: useSSL,
-	// })
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
+	mnpass := strings.TrimSpace(string(data))
 
-	// log.Printf("%#v\n", minioClient) // minioClient is now set up
+	// Initialize minio client object.
+	minioClient, err := minio.New(*minioEndpoint, &minio.Options{
+		Creds:  miniocreds.NewStaticV4(*minioUser, mnpass, ""),
+		Secure: *miniossl,
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Printf("%#v\n", minioClient) // minioClient is now set up
 
 	// Open prometheus metrics endpoint.
 	go func() {
@@ -74,7 +83,9 @@ func main() {
 		http.ListenAndServe(":"+strconv.Itoa(*metricsPort), nil)
 	}()
 
-	// Start backend service.
+	//
+	// Start server service.
+	//
 	lis, err := net.Listen("tcp", *address+":"+strconv.Itoa(*port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
