@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"log/slog"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bh90210/super/server/api"
 	"github.com/bh90210/super/server/dupload"
@@ -20,6 +22,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 func main() {
@@ -92,6 +95,18 @@ func main() {
 	}
 
 	defer conn.Close()
+
+	// Make a real gRPC call using the connection (health check).
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	hc := grpc_health_v1.NewHealthClient(conn)
+	resp, err := hc.Check(ctx, &grpc_health_v1.HealthCheckRequest{Service: ""})
+	if err != nil {
+		slog.Warn("keto health check failed", "error", err.Error())
+	} else {
+		slog.Info("keto health check ok", "status", resp.Status.String())
+	}
 
 	slog.Info("Connected to Keto", "address", *ketoAddr, " tls", *ketoTLS, " ketoCA", *ketoCA)
 
