@@ -38,7 +38,8 @@ func main() {
 	minioUser := flag.String("minio-user", "", "Minio access key ID")
 	minioPass := flag.String("minio-pass", "", "Minio secret access key")
 	miniossl := flag.Bool("minio-ssl", false, "Use SSL for Minio connection")
-	ketoAddr := flag.String("keto-addr", "keto:4467", "Keto gRPC server address")
+	ketoReadAddr := flag.String("keto-read-addr", "keto:4466", "Keto read gRPC server address")
+	ketoWriteAddr := flag.String("keto-write-addr", "keto:4467", "Keto write gRPC server address")
 	ketoTLS := flag.Bool("keto-tls", false, "Use TLS for Keto gRPC connection")
 	ketoCA := flag.String("keto-ca", "", "Keto CA certificate file path (if using TLS)")
 	flag.Parse()
@@ -85,33 +86,50 @@ func main() {
 	slog.Info("Connected to Minio", "endpoint", *minioEndpoint, "user", *minioUser, "ssl", *miniossl, "client", minioClient.EndpointURL().Scheme)
 
 	// Keto client setup.
-	conn, err := grpc.NewClient(
-		*ketoAddr,
+	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()), // or TLS creds
 		grpc.WithBlock(),
-	)
-	if err != nil {
-		slog.Error("failed to connect to keto server", slog.String("error", err.Error()))
-		return
 	}
 
-	defer conn.Close()
+	readConn, err := grpc.NewClient(*ketoReadAddr, dialOpts...)
+	if err != nil {
+		slog.Error("failed to connect to keto read server", slog.String("error", err.Error()))
+		return
+	}
+	defer readConn.Close()
 
-	// Make a real gRPC call using the connection (health check).
+	writeConn, err := grpc.NewClient(*ketoWriteAddr, dialOpts...)
+	if err != nil {
+		slog.Error("failed to connect to keto write server", slog.String("error", err.Error()))
+		return
+	}
+	defer writeConn.Close()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	hc := grpc_health_v1.NewHealthClient(conn)
-	resp, err := hc.Check(ctx, &grpc_health_v1.HealthCheckRequest{Service: ""})
-	if err != nil {
-		slog.Warn("keto health check failed", "error", err.Error())
+	readHC := grpc_health_v1.NewHealthClient(readConn)
+	if resp, err := readHC.Check(ctx, &grpc_health_v1.HealthCheckRequest{Service: ""}); err != nil {
+		slog.Warn("keto read health check failed", "error", err.Error())
 	} else {
-		slog.Info("keto health check ok", "status", resp.Status.String())
+		slog.Info("keto read health check ok", "status", resp.Status.String())
 	}
 
-	slog.Info("Connected to Keto", "address", *ketoAddr, " tls", *ketoTLS, " ketoCA", *ketoCA)
+	writeHC := grpc_health_v1.NewHealthClient(writeConn)
+	if resp, err := writeHC.Check(ctx, &grpc_health_v1.HealthCheckRequest{Service: ""}); err != nil {
+		slog.Warn("keto write health check failed", "error", err.Error())
+	} else {
+		slog.Info("keto write health check ok", "status", resp.Status.String())
+	}
 
-	rt := relationtuples.NewReadServiceClient(conn)
+	slog.Info("Connected to Keto",
+		"readAddress", *ketoReadAddr,
+		"writeAddress", *ketoWriteAddr,
+		"tls", *ketoTLS,
+		"ketoCA", *ketoCA,
+	)
+
+	rt := relationtuples.NewReadServiceClient(readConn)
 
 	ctx2, cancel2 := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel2()
