@@ -34,6 +34,9 @@ func main() {
 	minioUser := flag.String("minio-user", "", "Minio access key ID")
 	minioPass := flag.String("minio-pass", "", "Minio secret access key")
 	miniossl := flag.Bool("minio-ssl", false, "Use SSL for Minio connection")
+	ketoAddr := flag.String("keto-addr", "keto:4467", "Keto gRPC server address")
+	ketoTLS := flag.Bool("keto-tls", false, "Use TLS for Keto gRPC connection")
+	ketoCA := flag.String("keto-ca", "", "Keto CA certificate file path (if using TLS)")
 	flag.Parse()
 
 	// Connect to dgraph database.
@@ -59,7 +62,8 @@ func main() {
 	// Connect to minio server.
 	data, err := os.ReadFile(*minioPass)
 	if err != nil {
-		log.Fatalf("failed to read minio password file: %v", err)
+		slog.Error("failed to read minio password file", slog.String("error", err.Error()))
+		return
 	}
 
 	mnpass := strings.TrimSpace(string(data))
@@ -70,10 +74,26 @@ func main() {
 		Secure: *miniossl,
 	})
 	if err != nil {
-		log.Fatalln(err)
+		slog.Error("failed to create minio client", slog.String("error", err.Error()))
+		return
 	}
 
-	log.Printf("%#v\n", minioClient) // minioClient is now set up
+	slog.Info("Connected to Minio", "endpoint", *minioEndpoint, "user", *minioUser, "ssl", *miniossl, "client", minioClient.EndpointURL().Scheme)
+
+	// Keto client setup.
+	conn, err := grpc.NewClient(
+		*ketoAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()), // or TLS creds
+		grpc.WithBlock(),
+	)
+	if err != nil {
+		slog.Error("failed to connect to keto server", slog.String("error", err.Error()))
+		return
+	}
+
+	defer conn.Close()
+
+	slog.Info("Connected to Keto", "address", *ketoAddr, " tls", *ketoTLS, " ketoCA", *ketoCA)
 
 	// Open prometheus metrics endpoint.
 	go func() {
@@ -105,13 +125,13 @@ func main() {
 		log.Fatalf("failed to create dupload service: %v", err)
 	}
 
-	// Create credentials
+	// Create SSL credentials.
 	creds, err := credentials.NewServerTLSFromFile(*cert, *key)
 	if err != nil {
 		log.Fatalf("failed to create credentials: %v", err)
 	}
 
-	// Use Credentials in gRPC server options
+	// Use Credentials in gRPC server options.
 	serverOption := grpc.Creds(creds)
 	grpcServer := grpc.NewServer(serverOption)
 
