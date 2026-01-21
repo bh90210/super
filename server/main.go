@@ -18,6 +18,7 @@ import (
 	dgo "github.com/dgraph-io/dgo/v250"
 	"github.com/minio/minio-go/v7"
 	miniocreds "github.com/minio/minio-go/v7/pkg/credentials"
+	relationtuples "github.com/ory/keto/proto/ory/keto/relation_tuples/v1alpha2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -109,6 +110,18 @@ func main() {
 	}
 
 	slog.Info("Connected to Keto", "address", *ketoAddr, " tls", *ketoTLS, " ketoCA", *ketoCA)
+
+	rt := relationtuples.NewReadServiceClient(conn)
+
+	ctx2, cancel2 := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel2()
+
+	tuplesResp, err := rt.ListRelationTuples(ctx2, &relationtuples.ListRelationTuplesRequest{})
+	if err != nil {
+		slog.Warn("keto ListRelationTuples failed", "error", err.Error())
+	} else {
+		slog.Info("keto ListRelationTuples ok", "response", tuplesResp)
+	}
 
 	// Open prometheus metrics endpoint.
 	go func() {
