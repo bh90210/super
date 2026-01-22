@@ -14,4 +14,4 @@ tasks:
   test-build-docker:
     desc: Build the server Docker image locally for testing.
     cmds:
-      - docker buildx build --platform linux/amd64,linux/arm64 -t server:test .
+      - docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/bh90210/server:latest .
