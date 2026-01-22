@@ -15,8 +15,10 @@ require (
 	github.com/hajimehoshi/go-mp3 v0.3.4
 	github.com/johnsiilver/getcert v0.0.0-20201005022436-57fe9706afac
 	github.com/minio/minio-go/v7 v7.0.98
+	github.com/ory/keto/proto v0.13.0-alpha.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.9
+	go.yaml.in/yaml/v2 v2.4.2
 	google.golang.org/grpc v1.75.1
 	google.golang.org/protobuf v1.36.9
 )
@@ -76,7 +78,6 @@ require (
 	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/ory/keto/proto v0.13.0-alpha.0 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pjbgf/sha1cd v0.3.2 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
@@ -99,7 +100,6 @@ require (
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/net v0.48.0 // indirect
