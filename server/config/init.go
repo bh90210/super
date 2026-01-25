@@ -27,7 +27,7 @@ import (
 var clientsRetryPolicy = `{
 		"methodConfig": [{
 		  "name": [{}],
-		  "timeout": "5s"
+		  "timeout": "5s",
 		  "retryPolicy": {
 			  "MaxAttempts": 10,
 			  "InitialBackoff": "0.5s",
