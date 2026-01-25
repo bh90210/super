@@ -200,18 +200,9 @@ type minio struct {
 }
 
 func (m *minio) connect() (*min.Client, error) {
-	// Connect to minio server.
-	data, err := os.ReadFile(m.SecretKey)
-	if err != nil {
-		slog.Error("failed to read minio password file", slog.String("error", err.Error()))
-		return nil, err
-	}
-
-	mnpass := strings.TrimSpace(string(data))
-
 	// Initialize minio client object.
 	minioClient, err := min.New(m.Endpoint, &min.Options{
-		Creds:  miniocreds.NewStaticV4(m.AccessKey, mnpass, ""),
+		Creds:  miniocreds.NewStaticV4(m.AccessKey, m.SecretKey, ""),
 		Secure: m.UseSSL,
 	})
 	if err != nil {
