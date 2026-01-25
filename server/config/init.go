@@ -24,12 +24,12 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
-var retryPolicy = `{
+var clientsRetryPolicy = `{
 		"methodConfig": [{
 		  "name": [{}],
 		  "timeout": "5s"
 		  "retryPolicy": {
-			  "MaxAttempts": 20,
+			  "MaxAttempts": 10,
 			  "InitialBackoff": "0.5s",
 			  "MaxBackoff": "30s",
 			  "BackoffMultiplier": 0.1,
@@ -167,7 +167,7 @@ func (d *dgraph) connect() (*dgo.Dgraph, error) {
 		// dgo.WithACLCreds("groot", "password"),
 		// add insecure transport credentials
 		dgo.WithGrpcOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
-		dgo.WithGrpcOption(grpc.WithDefaultServiceConfig(retryPolicy)),
+		dgo.WithGrpcOption(grpc.WithDefaultServiceConfig(clientsRetryPolicy)),
 	)
 	if err != nil {
 		slog.Error("failed to create dgraph client", slog.String("error", err.Error()))
@@ -242,7 +242,7 @@ func (k *keto) connect() (*grpc.ClientConn, *grpc.ClientConn, error) {
 	// Keto client setup.
 	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()), // or TLS creds
-		grpc.WithDefaultServiceConfig(retryPolicy),
+		grpc.WithDefaultServiceConfig(clientsRetryPolicy),
 	}
 
 	readConn, err := grpc.NewClient(k.ReadAddress, dialOpts...)
