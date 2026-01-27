@@ -3,5 +3,15 @@
 
 export {
     App,
-    Menu
+    BrowserManager,
+    ClipboardManager,
+    ContextMenuManager,
+    DialogManager,
+    EnvironmentManager,
+    EventManager,
+    KeyBindingManager,
+    MenuManager,
+    ScreenManager,
+    SystemTrayManager,
+    WindowManager
 } from "./models.js";
