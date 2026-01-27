@@ -39,7 +39,7 @@ func main() {
 		Description: "Earth is captured by a technocapital singularity",
 		Services: []application.Service{
 			application.NewService(state),
-			application.NewService(&state.Dupload),
+			// application.NewService(&state.Dupload),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -49,24 +49,24 @@ func main() {
 		},
 		LogLevel: slog.LevelDebug,
 		// TODO: finish keybindings.
-		KeyBindings: map[string]func(window *application.WebviewWindow){
-			"CmdOrCtrl+Shift+C": func(window *application.WebviewWindow) {
+		KeyBindings: map[string]func(window application.Window){
+			"CmdOrCtrl+Shift+C": func(window application.Window) {
 				fmt.Println("CmdOrCtrl+Shift+C")
-				state.ClearSearch()
+				// state.ClearSearch()
 				// window.HandleKeyEvent("CmdOrCtrl+Shift+I")
 			},
 		},
 	})
 
 	state.Init(app)
-	state.Dupload.Init(app)
+	// state.Dupload.Init(app)
 
 	// Create a new window with the necessary options.
 	// 'Title' is the title of the window.
 	// 'Mac' options tailor the window when running on macOS.
 	// 'BackgroundColour' is the background colour of the window.
 	// 'URL' is the URL that will be loaded into the webview.
-	app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+	app.Window.NewWithOptions(application.WebviewWindowOptions{
 		// Title: "SUPER",
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 0,
@@ -75,17 +75,17 @@ func main() {
 		},
 		Linux: application.LinuxWindow{
 			WebviewGpuPolicy:    application.WebviewGpuPolicyOnDemand,
-			WindowIsTranslucent: true,
+			WindowIsTranslucent: false,
 		},
-		BackgroundColour:  application.NewRGB(27, 38, 54),
-		URL:               "/",
-		Frameless:         true,
-		DisableResize:     false,
-		Width:             1000,
-		Height:            810,
-		EnableDragAndDrop: false,
-		MinWidth:          950,
-		MinHeight:         810,
+		BackgroundColour: application.NewRGB(0, 0, 0),
+		URL:              "/",
+		// Frameless:        true,
+		DisableResize: false,
+		Width:         1000,
+		Height:        810,
+		// EnableDragAndDrop: false,
+		MinWidth:  950,
+		MinHeight: 810,
 	})
 
 	// Run the application. This blocks until the application has been exited.

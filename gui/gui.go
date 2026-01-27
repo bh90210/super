@@ -148,41 +148,41 @@ func (s *State) Init(app *application.App) (err error) {
 func (s *State) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
 	go func() {
 		// Init.
-		s.App.OnEvent("ready", func(event *application.CustomEvent) {
-			s.App.EmitEvent("previous", true)
-			s.App.EmitEvent("next", true)
-			s.App.EmitEvent("progress.bar", 0.)
-			s.App.EmitEvent("time", "--:--")
-			s.App.EmitEvent("play.pause", "Play")
-			s.App.EmitEvent("play.pause.deactivate", true)
-			s.App.EmitEvent("volume.set", "70")
+		s.App.Event.On("ready", func(event *application.CustomEvent) {
+			s.App.Event.Emit("previous", true)
+			s.App.Event.Emit("next", true)
+			s.App.Event.Emit("progress.bar", 0.)
+			s.App.Event.Emit("time", "--:--")
+			s.App.Event.Emit("play.pause", "Play")
+			s.App.Event.Emit("play.pause.deactivate", true)
+			s.App.Event.Emit("volume.set", "70")
 			s.Controls.Volume.Value = .7
-			s.App.EmitEvent("status.left", "--")
-			s.App.EmitEvent("status.center", "--")
-			s.App.EmitEvent("status.right", "--")
+			s.App.Event.Emit("status.left", "--")
+			s.App.Event.Emit("status.center", "--")
+			s.App.Event.Emit("status.right", "--")
 			s.List()
-			s.App.OffEvent("ready")
+			s.App.Event.Off("ready")
 		})
 	}()
 
 	// Listeners.
-	s.App.OnEvent("front.volume.mute", func(event *application.CustomEvent) {
-		s.App.EmitEvent("volume.set", "0")
+	s.App.Event.On("front.volume.mute", func(event *application.CustomEvent) {
+		s.App.Event.Emit("volume.set", "0")
 		s.Controls.Volume.Value = 0.
 		if s.Player.Oto != nil {
 			s.Player.Oto.SetVolume(0.)
 		}
 	})
 
-	s.App.OnEvent("front.volume.max", func(event *application.CustomEvent) {
-		s.App.EmitEvent("volume.set", "100")
+	s.App.Event.On("front.volume.max", func(event *application.CustomEvent) {
+		s.App.Event.Emit("volume.set", "100")
 		s.Controls.Volume.Value = 1.
 		if s.Player.Oto != nil {
 			s.Player.Oto.SetVolume(1.)
 		}
 	})
 
-	s.App.OnEvent("front.volume.set", func(event *application.CustomEvent) {
+	s.App.Event.On("front.volume.set", func(event *application.CustomEvent) {
 		i, err := strconv.Atoi(event.Data.(string))
 		if err != nil {
 			s.App.Logger.Error("strconv.Atoi", "error", err)
@@ -196,40 +196,40 @@ func (s *State) ServiceStartup(ctx context.Context, options application.ServiceO
 		}
 	})
 
-	s.App.OnEvent("front.list.play", func(event *application.CustomEvent) {
+	s.App.Event.On("front.list.play", func(event *application.CustomEvent) {
 		s.App.Logger.Debug("front.list.play", "event", event.Data)
 		s.play(int(event.Data.(float64)))
 	})
 
-	s.App.OnEvent("front.play.pause", func(event *application.CustomEvent) {
+	s.App.Event.On("front.play.pause", func(event *application.CustomEvent) {
 		if s.Player.Oto != nil {
 			if s.Player.Oto.IsPlaying() {
 				s.Player.Oto.Pause()
-				s.App.EmitEvent("play.pause", "Play")
+				s.App.Event.Emit("play.pause", "Play")
 				s.tickerStop <- struct{}{}
 				s.playing = PAUSED
 			} else {
 				s.Player.Oto.Play()
-				s.App.EmitEvent("play.pause", "Pause")
+				s.App.Event.Emit("play.pause", "Pause")
 				s.tickerReset <- struct{}{}
 				s.playing = PLAYING
 			}
 		}
 	})
 
-	s.App.OnEvent("front.next", func(event *application.CustomEvent) {
+	s.App.Event.On("front.next", func(event *application.CustomEvent) {
 		s.play(s.Active.index + 2)
 	})
 
-	s.App.OnEvent("front.previous", func(event *application.CustomEvent) {
+	s.App.Event.On("front.previous", func(event *application.CustomEvent) {
 		s.play(s.Active.index)
 	})
 
-	s.App.OnEvent("front.progress", func(event *application.CustomEvent) {
+	s.App.Event.On("front.progress", func(event *application.CustomEvent) {
 		s.reposition <- event.Data.(float64)
 	})
 
-	s.App.OnEvent("front.search.query", func(event *application.CustomEvent) {
+	s.App.Event.On("front.search.query", func(event *application.CustomEvent) {
 		if event.Data.(string) == "" {
 			s.List()
 			return
@@ -249,46 +249,46 @@ func (s *State) ServiceStartup(ctx context.Context, options application.ServiceO
 		s.Active.Name = "Search: " + event.Data.(string)
 		s.mu.Unlock()
 
-		s.App.EmitEvent("list", list)
+		s.App.Event.Emit("list", list)
 
 		s.App.Logger.Debug("front.search.query", "event", event.Data.(string))
 	})
 
-	s.App.OnEvent("front.search.button", func(event *application.CustomEvent) {
+	s.App.Event.On("front.search.button", func(event *application.CustomEvent) {
 		s.App.Logger.Debug("front.search.button", "event", event.Data)
 		s.List()
 	})
 
-	s.App.OnEvent("front.dupload", func(event *application.CustomEvent) {
+	s.App.Event.On("front.dupload", func(event *application.CustomEvent) {
 		s.App.Logger.Debug("front.dupload", "event", event.Data)
 
-		s.App.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+		s.App.Window.NewWithOptions(application.WebviewWindowOptions{
 			Title: "Dupload",
 			Mac: application.MacWindow{
 				InvisibleTitleBarHeight: 0,
 				Backdrop:                application.MacBackdropTranslucent,
 				TitleBar:                application.MacTitleBarHiddenInset,
 			},
-			BackgroundColour:  application.NewRGB(27, 38, 54),
-			URL:               "/dupload",
-			Frameless:         true,
-			DisableResize:     false,
-			Width:             800,
-			Height:            700,
-			EnableDragAndDrop: true,
+			BackgroundColour: application.NewRGB(27, 38, 54),
+			URL:              "/dupload",
+			Frameless:        true,
+			DisableResize:    false,
+			Width:            800,
+			Height:           700,
+			// EnableDragAndDrop: true,
 		})
 	})
 
-	s.App.OnEvent("front.minimize", func(event *application.CustomEvent) {
-		s.App.CurrentWindow().Minimise()
+	s.App.Event.On("front.minimize", func(event *application.CustomEvent) {
+		s.App.Window.Current().Minimise()
 	})
 
-	s.App.OnEvent("front.maximize", func(event *application.CustomEvent) {
-		s.App.CurrentWindow().ToggleMaximise()
+	s.App.Event.On("front.maximize", func(event *application.CustomEvent) {
+		s.App.Window.Current().ToggleMaximise()
 	})
 
-	s.App.OnEvent("front.close", func(event *application.CustomEvent) {
-		s.App.CurrentWindow().Close()
+	s.App.Event.On("front.close", func(event *application.CustomEvent) {
+		s.App.Window.Current().Close()
 	})
 
 	return nil
@@ -308,7 +308,7 @@ func (s *State) List() []api.File {
 	s.Active.Name = "--"
 	s.mu.Unlock()
 
-	s.App.EmitEvent("list", list)
+	s.App.Event.Emit("list", list)
 
 	return list
 }
@@ -319,18 +319,18 @@ func (s *State) play(index int) {
 		s.tickerKill <- struct{}{}
 	}
 
-	s.App.EmitEvent("status.left", s.Active.Name)
+	s.App.Event.Emit("status.left", s.Active.Name)
 	track, ok := s.Active.List[index-1]
 	if ok {
 		go func() {
-			s.App.EmitEvent("progress.bar", 100)
-			s.App.EmitEvent("segmented", nil)
-			s.App.EmitEvent("time", "loading...")
+			s.App.Event.Emit("progress.bar", 100)
+			s.App.Event.Emit("segmented", nil)
+			s.App.Event.Emit("time", "loading...")
 		}()
 
-		s.App.EmitEvent("play.pause", "Pause")
-		s.App.EmitEvent("play.pause.deactivate", false)
-		s.App.EmitEvent("status.center", track.Artist+" - "+track.Track)
+		s.App.Event.Emit("play.pause", "Pause")
+		s.App.Event.Emit("play.pause.deactivate", false)
+		s.App.Event.Emit("status.center", track.Artist+" - "+track.Track)
 		s.Active.index = index - 1
 
 		s.App.Logger.Debug("play", "track", track.Track, "artist", track.Artist, "index", index-1)
@@ -339,18 +339,18 @@ func (s *State) play(index int) {
 
 	nextTrack, nextOk := s.Active.List[index]
 	if nextOk {
-		s.App.EmitEvent("status.right", nextTrack.Artist+" - "+nextTrack.Track)
-		s.App.EmitEvent("next", false)
+		s.App.Event.Emit("status.right", nextTrack.Artist+" - "+nextTrack.Track)
+		s.App.Event.Emit("next", false)
 	} else {
-		s.App.EmitEvent("status.right", "--")
-		s.App.EmitEvent("next", true)
+		s.App.Event.Emit("status.right", "--")
+		s.App.Event.Emit("next", true)
 	}
 
 	_, prevOk := s.Active.List[index-2]
 	if prevOk {
-		s.App.EmitEvent("previous", false)
+		s.App.Event.Emit("previous", false)
 	} else {
-		s.App.EmitEvent("previous", true)
+		s.App.Event.Emit("previous", true)
 	}
 
 	s.playing = PLAYING
@@ -394,12 +394,11 @@ func (s *State) play(index int) {
 						return
 					}
 
-					s.App.EmitEvent("play.pause", "Play")
-					s.App.EmitEvent("play.pause.deactivate", true)
-					s.App.EmitEvent("status.center", "--")
-					s.App.EmitEvent("time", "--:--")
-					s.App.EmitEvent("progress.bar", 0.)
-
+					s.App.Event.Emit("play.pause", "Play")
+					s.App.Event.Emit("play.pause.deactivate", true)
+					s.App.Event.Emit("status.center", "--")
+					s.App.Event.Emit("time", "--:--")
+					s.App.Event.Emit("progress.bar", 0.)
 					return
 				}
 
@@ -413,19 +412,18 @@ func (s *State) play(index int) {
 					} else {
 						loading = true
 					}
-					s.App.EmitEvent("progress.bar", 100)
-					s.App.EmitEvent("segmented", nil)
-					s.App.EmitEvent("time", "loading...")
+					s.App.Event.Emit("progress.bar", 100)
+					s.App.Event.Emit("segmented", nil)
+					s.App.Event.Emit("time", "loading...")
 					continue
 				}
 
-				s.App.EmitEvent("segmented.off", nil)
+				s.App.Event.Emit("segmented.off", nil)
 
-				s.App.EmitEvent("time", time.Duration(
+				s.App.Event.Emit("time", time.Duration(
 					int(float64(meta.Size-meta.Length)/44100)*int(time.Second),
 				).String())
-				s.App.EmitEvent("progress.bar", scale(float64(meta.Size-meta.Length), 0, 100, 0, float64(meta.Size)))
-
+				s.App.Event.Emit("progress.bar", scale(float64(meta.Size-meta.Length), 0, 100, 0, float64(meta.Size)))
 			case <-s.tickerStop:
 				ticker.Stop()
 
@@ -475,10 +473,10 @@ func (s *State) play(index int) {
 
 					meta := s.Player.Meta()
 
-					s.App.EmitEvent("time", time.Duration(
+					s.App.Event.Emit("time", time.Duration(
 						int(float64(meta.Size-meta.Length)/44100)*int(time.Second),
 					).String())
-					s.App.EmitEvent("progress.bar", scale(float64(meta.Size-meta.Length), 0, 100, 0, float64(meta.Size)))
+					s.App.Event.Emit("progress.bar", scale(float64(meta.Size-meta.Length), 0, 100, 0, float64(meta.Size)))
 				}
 			}
 		}
