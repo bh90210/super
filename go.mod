@@ -4,10 +4,8 @@ go 1.25
 
 require (
 	github.com/blevesearch/bleve v1.0.14
-	github.com/charlievieth/fastwalk v1.0.14
 	github.com/dgraph-io/badger/v4 v4.9.0
 	github.com/dgraph-io/dgo/v250 v250.0.0
-	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 	github.com/ebitengine/oto/v3 v3.4.0
 	github.com/go-playground/webhooks/v6 v6.4.0
 	github.com/google/go-github/v81 v81.0.0

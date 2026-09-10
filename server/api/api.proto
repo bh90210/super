@@ -1,8 +1,13 @@
 syntax = "proto3";
 
-option go_package = "github.com/bh90210/super/api";
+option go_package = "github.com/bh90210/super/server/api";
 
 package api;
+
+// Import provides the API endpoints to import media files into the library.
+service Import {
+
+}
 
 service Library {
   rpc Get(LibraryRequest) returns (stream LibraryResponse) {}

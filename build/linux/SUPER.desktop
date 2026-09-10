@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=SUPER
+Comment=Earth is captured by a technocapital singularity
+Exec=/home/byron/work/super/bin/SUPER %u
+Icon=SUPER
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;Player;
+MimeType=x-scheme-handler/super;
+StartupNotify=true

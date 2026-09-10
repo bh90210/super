@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/bh90210/super/server/api"
-	"github.com/bh90210/super/server/dupload"
-	"github.com/bh90210/super/server/library"
 	dgo "github.com/dgraph-io/dgo/v250"
 	min "github.com/minio/minio-go/v7"
 	miniocreds "github.com/minio/minio-go/v7/pkg/credentials"
@@ -21,10 +19,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
-var clientsRetryPolicy = `{
+var grpcClientsRetryPolicy = `{
 		"methodConfig": [{
 		  "name": [{}],
 		  "timeout": "5s",
@@ -106,18 +107,6 @@ func start(c *Config) error {
 	_ = ketoRead
 	_ = ketoWrite
 
-	libraryService, err := library.NewService(c.Server.LibraryPath)
-	if err != nil {
-		slog.Error("failed to create library service", slog.String("error", err.Error()))
-		return err
-	}
-
-	duploadService, err := dupload.NewService(c.Server.LibraryPath)
-	if err != nil {
-		slog.Error("failed to create dupload service", slog.String("error", err.Error()))
-		return err
-	}
-
 	// Create SSL credentials.
 	creds, err := credentials.NewServerTLSFromFile(c.Server.SSLCertPath, c.Server.SSLKeyPath)
 	if err != nil {
@@ -129,8 +118,25 @@ func start(c *Config) error {
 	serverOption := grpc.Creds(creds)
 	grpcServer := grpc.NewServer(serverOption)
 
-	api.RegisterLibraryServer(grpcServer, libraryService)
-	api.RegisterDuploadServer(grpcServer, duploadService)
+	healthcheck := health.NewServer()
+	healthgrpc.RegisterHealthServer(grpcServer, healthcheck)
+	go func() {
+		// asynchronously inspect dependencies and toggle serving status as needed
+		next := healthpb.HealthCheckResponse_SERVING
+
+		for {
+			healthcheck.SetServingStatus("", next)
+			if next == healthpb.HealthCheckResponse_SERVING {
+				next = healthpb.HealthCheckResponse_NOT_SERVING
+			} else {
+				next = healthpb.HealthCheckResponse_SERVING
+			}
+
+			time.Sleep(5 * time.Second)
+		}
+	}()
+
+	api.RegisterLibraryServer(grpcServer, importService)
 
 	lis, err := net.Listen("tcp", c.Server.ListenAddress+":"+c.Server.ListenPort)
 	if err != nil {
@@ -167,7 +173,7 @@ func (d *dgraph) connect() (*dgo.Dgraph, error) {
 		// dgo.WithACLCreds("groot", "password"),
 		// add insecure transport credentials
 		dgo.WithGrpcOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
-		dgo.WithGrpcOption(grpc.WithDefaultServiceConfig(clientsRetryPolicy)),
+		dgo.WithGrpcOption(grpc.WithDefaultServiceConfig(grpcClientsRetryPolicy)),
 	)
 	if err != nil {
 		slog.Error("failed to create dgraph client", slog.String("error", err.Error()))
@@ -233,7 +239,7 @@ func (k *keto) connect() (*grpc.ClientConn, *grpc.ClientConn, error) {
 	// Keto client setup.
 	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()), // or TLS creds
-		grpc.WithDefaultServiceConfig(clientsRetryPolicy),
+		grpc.WithDefaultServiceConfig(grpcClientsRetryPolicy),
 	}
 
 	readConn, err := grpc.NewClient(k.ReadAddress, dialOpts...)
