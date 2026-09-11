@@ -53,7 +53,7 @@ export const fetchLikedSong = createAsyncThunk<boolean, string>(
 
 export const fetchDevices = createAsyncThunk<Device[]>('spotify/fetchDevices', async () => {
   const response = await playerService.getAvailableDevices();
-  return response.devices || [];
+  return response.devices;
 });
 
 const spotifySlice = createSlice({
@@ -85,7 +85,7 @@ const spotifySlice = createSlice({
       state.liked = action.payload;
     });
     builder.addCase(fetchDevices.fulfilled, (state, action) => {
-      state.devices = action.payload || [];
+      state.devices = action.payload;
     });
   },
 });
@@ -93,7 +93,7 @@ const spotifySlice = createSlice({
 export const getCurrentDevice = createSelector(
   [(state: RootState) => state.spotify.devices],
   (devices) => {
-    return devices?.find((device) => device.is_active) || null;
+    return devices.find((device) => device.is_active);
   }
 );
 
@@ -107,7 +107,7 @@ export const isActiveOnOtherDevice = createSelector(
 export const getOtherDevices = createSelector(
   [(state: RootState) => state.spotify.devices],
   (devices) => {
-    return devices?.filter((device) => !device.is_active) || [];
+    return devices.filter((device) => !device.is_active);
   }
 );
 

@@ -3,7 +3,17 @@ import './styles/App.scss';
 
 // Utils
 import i18next from 'i18next';
-import { FC, Suspense, lazy, memo, useCallback, useEffect, useMemo, useRef, Component, ErrorInfo, ReactNode } from 'react';
+import {
+  Suspense,
+  lazy,
+  memo,
+  useEffect,
+  useMemo,
+  useRef,
+  Component,
+  ErrorInfo,
+  ReactNode,
+} from 'react';
 
 // Components
 import { ConfigProvider } from 'antd';
@@ -90,54 +100,55 @@ const RoutesComponent = memo(() => {
   }, [location, container]);
 
   const routes = useMemo(
-    () => [
-      { path: '', element: <Home container={container} /> },
-      { path: '/collection/tracks', element: <LikedSongsPage container={container} /> },
-      {
-        path: '/playlist/:playlistId',
-        element: <PlaylistView container={container} />,
-      },
-      { path: '/album/:albumId', element: <AlbumView container={container} /> },
-      {
-        path: '/artist/:artistId/discography',
-        element: <ArtistDiscographyPage container={container} />,
-      },
-      { path: '/artist/:artistId', element: <ArtistPage container={container} /> },
-      { path: '/users/:userId/artists', element: <ProfileArtists container={container} /> },
-      { path: '/users/:userId/playlists', element: <ProfilePlaylists container={container} /> },
-      { path: '/users/:userId/tracks', element: <ProfileTracks container={container} /> },
-      { path: '/users/:userId', element: <Profile container={container} /> },
-      { path: '/genre/:genreId', element: <GenrePage /> },
-      { path: '/search', element: <BrowsePage /> },
-      { path: '/recent-searches', element: <RecentlySearched /> },
-      {
-        path: '/search/:search',
-        element: <SearchContainer container={container} />,
-        children: [
-          {
-            path: 'artists',
-            element: <SearchPageArtists container={container} />,
-          },
-          {
-            path: 'albums',
-            element: <SearchAlbums container={container} />,
-          },
-          {
-            path: 'playlists',
-            element: <SearchPlaylist container={container} />,
-          },
-          {
-            path: 'tracks',
-            element: <SearchTracks container={container} />,
-          },
-          {
-            path: '',
-            element: <SearchPage container={container} />,
-          },
-        ],
-      },
-      { path: '*', element: <Page404 /> },
-    ],
+    () =>
+      [
+        { path: '', element: <Home container={container} /> },
+        { path: '/collection/tracks', element: <LikedSongsPage container={container} /> },
+        {
+          path: '/playlist/:playlistId',
+          element: <PlaylistView container={container} />,
+        },
+        { path: '/album/:albumId', element: <AlbumView container={container} /> },
+        {
+          path: '/artist/:artistId/discography',
+          element: <ArtistDiscographyPage container={container} />,
+        },
+        { path: '/artist/:artistId', element: <ArtistPage container={container} /> },
+        { path: '/users/:userId/artists', element: <ProfileArtists container={container} /> },
+        { path: '/users/:userId/playlists', element: <ProfilePlaylists container={container} /> },
+        { path: '/users/:userId/tracks', element: <ProfileTracks container={container} /> },
+        { path: '/users/:userId', element: <Profile container={container} /> },
+        { path: '/genre/:genreId', element: <GenrePage /> },
+        { path: '/search', element: <BrowsePage /> },
+        { path: '/recent-searches', element: <RecentlySearched /> },
+        {
+          path: '/search/:search',
+          element: <SearchContainer container={container} />,
+          children: [
+            {
+              path: 'artists',
+              element: <SearchPageArtists container={container} />,
+            },
+            {
+              path: 'albums',
+              element: <SearchAlbums container={container} />,
+            },
+            {
+              path: 'playlists',
+              element: <SearchPlaylist container={container} />,
+            },
+            {
+              path: 'tracks',
+              element: <SearchTracks container={container} />,
+            },
+            {
+              path: '',
+              element: <SearchPage container={container} />,
+            },
+          ],
+        },
+        { path: '*', element: <Page404 /> },
+      ],
     [container]
   );
 
@@ -149,21 +160,13 @@ const RoutesComponent = memo(() => {
           width: '100%',
         }}
       >
-        <Suspense fallback={<div style={{ color: 'white' }}>Loading...</div>}>
+        <Suspense fallback={<Spinner loading={true} />}>
           <Routes>
             {routes.map((route) => (
-              <Route
-                key={route.path}
-                path={route.path}
-                element={route.element}
-              >
+              <Route key={route.path} path={route.path} element={route.element}>
                 {route?.children
                   ? route.children.map((child) => (
-                      <Route
-                        key={child.path}
-                        path={child.path}
-                        element={child.element}
-                      />
+                      <Route key={child.path} path={child.path} element={child.element} />
                     ))
                   : undefined}
               </Route>

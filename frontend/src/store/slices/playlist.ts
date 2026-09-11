@@ -11,6 +11,17 @@ import type { Track } from '../../interfaces/track';
 import type { Pagination } from '../../interfaces/api';
 import type { Playlist, PlaylistItem, PlaylistItemWithSaved } from '../../interfaces/playlists';
 
+// Shape produced by the RTK Query `getPlaylistPage` endpoint, mirrored into this slice so the
+// existing Playlist sub-components keep reading state.playlist.* unchanged.
+export interface PlaylistPageData {
+  playlist: Playlist;
+  tracks: PlaylistItemWithSaved[];
+  following: boolean;
+  canEdit: boolean;
+  user: User | null;
+  recommendations: Track[];
+}
+
 const initialState: {
   user: User | null;
   recommedations: Track[];
@@ -22,6 +33,7 @@ const initialState: {
   following: boolean;
 
   order: string;
+  search: string;
   view: 'LIST' | 'COMPACT';
 } = {
   user: null,
@@ -34,6 +46,7 @@ const initialState: {
   following: false,
 
   order: 'ALL',
+  search: '',
   view: 'LIST',
 };
 
@@ -62,7 +75,9 @@ export const fetchPlaylist = createAsyncThunk<
   const canEdit = isMine || playlist.collaborative;
 
   const extraPromises = [
-    playlist.owner?.id ? userService.getUser(playlist.owner.id) : Promise.resolve({ data: null }),
+    // `/users/{id}` was removed Feb 2026, so we can't fetch the owner's full profile.
+    // The playlist already embeds its `owner` (id, display_name, uri) — use that for display.
+    Promise.resolve({ data: playlist.owner ?? null }),
     ids.length && user
       ? userService.checkSavedTracks(items.map((item) => item.track.id)).catch(() => ({ data: [] }))
       : Promise.resolve({ data: [] }),
@@ -170,6 +185,7 @@ const playlistSlice = createSlice({
         state.user = null;
         state.loading = true;
         state.view = 'LIST';
+        state.search = '';
       }
     },
     removeTrack(state, action: PayloadAction<{ id: string }>) {
@@ -182,6 +198,9 @@ const playlistSlice = createSlice({
     },
     setView(state, action: PayloadAction<{ view: 'LIST' | 'COMPACT' }>) {
       state.view = action.payload.view;
+    },
+    setSearch(state, action: PayloadAction<{ search: string }>) {
+      state.search = action.payload.search;
     },
     setOrder(state, action: PayloadAction<{ order: string }>) {
       state.order = action.payload.order;
@@ -198,10 +217,23 @@ const playlistSlice = createSlice({
     removeTrackFromRecommendations(state, action: PayloadAction<{ id: string }>) {
       state.recommedations = state.recommedations.filter((track) => track.id !== action.payload.id);
     },
+    // Mirror an RTK Query `getPlaylistPage` result into this slice.
+    setPlaylistData(state, action: PayloadAction<PlaylistPageData>) {
+      const p = action.payload;
+      state.playlist = p.playlist;
+      state.tracks = p.tracks;
+      state.following = p.following;
+      state.canEdit = p.canEdit;
+      state.user = p.user;
+      state.recommedations = p.recommendations;
+      state.loading = false;
+      state.search = '';
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(fetchPlaylist.pending, (state) => {
       state.loading = true;
+      state.search = '';
     });
     builder.addCase(fetchPlaylist.fulfilled, (state, action) => {
       state.playlist = action.payload[0];

@@ -24,17 +24,21 @@ contents:
   - src: "./build/linux/SUPER.desktop"
     dst: "/usr/share/applications/SUPER.desktop"
 
+# Wails v3 (>= beta) links against GTK4 / WebKitGTK 6.0 (libsoup3), not GTK3 /
+# WebKit2. Keep these in sync with `ldd bin/SUPER`.
 depends:
-  - gtk3
-  - libwebkit2gtk
+  - libgtk-4-1
+  - libwebkitgtk-6.0-4
+  - libsoup-3.0-0
 
 # replaces:
 #   - foobar
 # provides:
 #   - bar
 # depends:
-#   - gtk3
-#   - libwebkit2gtk
+#   - libgtk-4-1
+#   - libwebkitgtk-6.0-4
+#   - libsoup-3.0-0
 # recommends:
 #   - whatever
 # suggests:

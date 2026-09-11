@@ -1,41 +1,96 @@
-import { Slider as AntSlider } from 'antd';
+// @ts-ignore
+import { Direction, Slider as RPSlider } from 'react-player-controls';
+
+const SliderBar = ({
+  value,
+  style,
+  className,
+}: {
+  value: number;
+  style?: React.CSSProperties;
+  className: string;
+  direction: Direction;
+}) => (
+  <div
+    className={className}
+    style={Object.assign(
+      {},
+      {
+        position: 'absolute',
+        borderRadius: 4,
+      },
+      {
+        top: 0,
+        bottom: 0,
+        left: 0,
+        width: `${value * 100}%`,
+      },
+      style
+    )}
+  />
+);
+
+const SliderHandle = ({
+  value,
+  style,
+  className,
+}: {
+  value: number;
+  style?: React.CSSProperties;
+  className: string;
+  direction: Direction;
+}) => (
+  <div
+    className={className}
+    style={Object.assign(
+      {},
+      {
+        position: 'absolute',
+        width: 10,
+        height: 10,
+        borderRadius: '100%',
+        transform: 'scale(1)',
+        transition: 'transform 0.2s',
+        '&:hover': {
+          transform: 'scale(1.3)',
+        },
+      },
+      {
+        top: 0,
+        left: `${value * 100}%`,
+        marginTop: -3,
+        marginLeft: -8,
+      },
+      style
+    )}
+  />
+);
 
 export const Slider = ({
   isEnabled,
+  direction = Direction.HORIZONTAL,
   value,
-  onChange,
-  onChangeStart,
-  onChangeEnd,
+  ...props
 }: {
   isEnabled: boolean;
-  direction?: 'horizontal' | 'vertical';
+  direction?: Direction;
   value: number;
   onChangeStart?: () => void;
   onChange: (value: number) => void;
   onChangeEnd?: (value: number) => void;
 }) => {
-  const handleChange = (newValue: number | number[]) => {
-    const val = Array.isArray(newValue) ? newValue[0] : newValue;
-    onChange(val / 100); // Convert from 0-100 to 0-1
-  };
-
-  const handleAfterChange = (newValue: number | number[]) => {
-    const val = Array.isArray(newValue) ? newValue[0] : newValue;
-    onChangeEnd?.(val / 100);
-  };
-
   return (
     <div className='volume-sider-container'>
-      <AntSlider
-        disabled={!isEnabled}
-        value={value * 100} // Convert from 0-1 to 0-100
-        onChange={handleChange}
-        // onChangeStart={onChangeStart}
-        onChangeComplete={handleAfterChange}
-        tooltip={{ formatter: null }} // Hide tooltip
+      <RPSlider
+        isEnabled={isEnabled}
+        direction={direction}
         className='volume-sider'
         style={{ cursor: 'pointer' }}
-      />
+        {...props}
+      >
+        <SliderBar className='position-sider' direction={direction} value={value} />
+        <SliderHandle className='handler-sider' direction={direction} value={value} />
+      </RPSlider>
     </div>
   );
 };

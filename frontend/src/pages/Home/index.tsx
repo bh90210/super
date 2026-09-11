@@ -23,6 +23,8 @@ const Home: FC<HomeProps> = memo((props) => {
       dispatch(homeActions.fetchTopTracks());
       dispatch(homeActions.fetchMadeForYou());
       dispatch(homeActions.fetchRecentlyPlayed());
+      dispatch(homeActions.fetchPodcastEpisodes());
+      dispatch(homeActions.fetchMoreLikeArtists());
     }
     dispatch(homeActions.fetchRanking());
     dispatch(homeActions.fetchTrending());

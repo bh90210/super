@@ -5,6 +5,12 @@ import type { Album } from '../interfaces/albums';
 import type { Artist } from '../interfaces/artist';
 import type { Pagination } from '../interfaces/api';
 import type { Playlist } from '../interfaces/playlists';
+import type { Episode } from '../interfaces/episode';
+
+// Feb 2026 reduced `/search`'s max `limit` from 50 to 10. Clamp here so every caller is safe
+// without having to audit each call site; pagination via `offset` still fetches more.
+const SEARCH_MAX_LIMIT = 10;
+const clampLimit = (limit?: number) => Math.min(limit ?? SEARCH_MAX_LIMIT, SEARCH_MAX_LIMIT);
 
 /**
  * @description Get Spotify catalog information about albums, artists, playlists, tracks, shows, episodes or audiobooks that match a keyword string. Audiobooks are only available within the US, UK, Canada, Ireland, New Zealand and Australia markets.
@@ -36,4 +42,17 @@ export const querySearch = (params: {
     tracks: Pagination<Track>;
     artists: Pagination<Artist>;
     playlists: Pagination<Playlist>;
-  }>(`/search`, { params });
+  }>(`/search`, { params: { ...params, limit: clampLimit(params.limit) } });
+
+/**
+ * @description Search podcast episodes by keyword (`GET /search?type=episode`).
+ */
+export const searchEpisodes = (params: {
+  q: string;
+  limit?: number;
+  offset?: number;
+  market?: string;
+}) =>
+  axios.get<{ episodes: Pagination<Episode> }>('/search', {
+    params: { ...params, type: 'episode', limit: clampLimit(params.limit) },
+  });
