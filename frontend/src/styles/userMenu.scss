@@ -1,0 +1,97 @@
+@use './variables.scss' as *;
+
+.user-menu-dropdown {
+  .ant-dropdown-menu {
+    min-width: 220px !important;
+    padding: 4px !important;
+    border-radius: 8px !important;
+  }
+
+  .ant-dropdown-menu-item {
+    gap: 12px;
+    height: auto !important;
+    padding: 10px 12px !important;
+    border-radius: 4px !important;
+
+    svg {
+      height: 16px;
+      width: 16px;
+      fill: hsla(0, 0%, 100%, 0.7);
+    }
+
+    &:hover {
+      background: #ffffff14 !important;
+
+      svg {
+        fill: #fff;
+      }
+    }
+  }
+
+  .ant-dropdown-menu-item-danger {
+    .ant-dropdown-menu-title-content {
+      color: #f15e6c;
+    }
+
+    svg {
+      fill: #f15e6c;
+    }
+
+    &:hover {
+      background: #f15e6c1f !important;
+
+      svg {
+        fill: #f15e6c;
+      }
+    }
+  }
+
+  .ant-dropdown-menu-item-divider {
+    background-color: hsla(0, 0%, 100%, 0.1) !important;
+    margin: 4px 0 !important;
+  }
+}
+
+.logout-modal {
+  .ant-modal-content {
+    background-color: #282828 !important;
+    border-radius: 8px;
+  }
+
+  .ant-modal-title {
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .logout-modal__description {
+    color: #b3b3b3;
+    font-size: 0.875rem;
+    margin: 8px 0 24px;
+  }
+
+  .logout-modal__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .logout-modal__cancel {
+    background: transparent;
+    border: 0;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 700;
+    padding: 8px 16px;
+
+    &:hover {
+      transform: scale(1.04);
+    }
+
+    &:active {
+      transform: scale(1);
+    }
+  }
+}

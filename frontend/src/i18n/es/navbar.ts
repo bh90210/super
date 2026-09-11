@@ -7,6 +7,11 @@ export const navbar = {
   Language: 'Idioma',
   'Contact me': 'Contactame',
   'Source code': 'Código fuente',
+  'Log In': 'Iniciar sesión',
+  Profile: 'Perfil',
+  Settings: 'Configuración',
+  Logout: 'Cerrar sesión',
+  'Account menu': 'Menú de cuenta',
   SearchPlaceholder: '¿Qué querés reproducir?',
   'Create a new Playlist': 'Crear una nueva Playlist',
   Playlist: 'Playlist',
@@ -23,5 +28,4 @@ export const navbar = {
   COMPACT: 'Compacto',
   GRID: 'Grilla',
   LIST: 'Lista',
-  'Log In': 'Iniciar sesión',
 };

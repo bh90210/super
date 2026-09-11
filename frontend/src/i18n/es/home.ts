@@ -39,4 +39,9 @@ export const home = {
   'Recently played': 'Escuchado recientemente',
   'Featured playlists': '¡En tendencia!',
   'Popular playlists': 'Playlists populares',
+  'Log out of SUPER?': '¿Cerrar sesión en SUPER?',
+  'You will need to log in again to access your library.':
+    'Vas a tener que iniciar sesión de nuevo para acceder a tu biblioteca.',
+  'Log out': 'Cerrar sesión',
+  Cancel: 'Cancelar',
 };

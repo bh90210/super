@@ -11,10 +11,17 @@
 
   cursor: pointer;
 
+  // Rendered as a <button> inside the account dropdown trigger.
+  border: 0;
+  padding: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+
   .avatar {
     border-radius: 50%;
     width: 30px;
     padding-top: 1px;
+    object-fit: cover;
   }
 
   &:hover,
