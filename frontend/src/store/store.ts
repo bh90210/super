@@ -9,8 +9,12 @@ import {
   persistReducer,
 } from 'redux-persist';
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
-import storage from 'redux-persist/lib/storage'; // defaults to localStorage
+import { setupListeners } from '@reduxjs/toolkit/query';
+import storage from 'redux-persist/es/storage'; // defaults to localStorage (ESM for Vite)
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
+
+// RTK Query data layer
+import { api } from './api';
 
 // Reducers
 import uiReducer from './slices/ui';
@@ -54,6 +58,7 @@ const appReducer = combineReducers({
   searchHistory: searchHistoryReducer,
   artistDiscography: artistDiscographyReducer,
   editPlaylistModal: editPlaylistModalReducer,
+  [api.reducerPath]: api.reducer,
 });
 
 // @ts-ignore
@@ -82,10 +87,14 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         ignoredPaths: ['spotify.player'],
+        ignoredActionPaths: ['payload.player'],
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }),
+    }).concat(api.middleware),
 });
+
+// Enable refetchOnFocus / refetchOnReconnect behavior for RTK Query.
+setupListeners(store.dispatch);
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

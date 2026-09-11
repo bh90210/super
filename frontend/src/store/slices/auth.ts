@@ -1,17 +1,12 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-// Utils
-import axios from '../../axios';
-import login from '../../utils/spotify/login';
-
-// Services
-import { authService } from '../../services/auth';
-
 // Interfaces
 import type { User } from '../../interfaces/user';
-import { getFromLocalStorageWithExpiry } from '../../utils/localstorage';
 
-// Mock user for bypassing Spotify auth
+// NOTE: Spotify auth is bypassed in this fork. The backend (Go/Wails) owns
+// authentication and the catalog; the UI runs against a local mock identity so
+// that every screen renders without a Spotify Premium account.
+// TODO: replace `mockUser` with the real user from the Go backend bindings.
 const mockUser: User = {
   id: 'local-user',
   display_name: 'Local User',

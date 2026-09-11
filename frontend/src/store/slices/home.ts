@@ -13,13 +13,28 @@ import type { Track } from '../../interfaces/track';
 import type { Album } from '../../interfaces/albums';
 import type { Artist } from '../../interfaces/artist';
 import type { Playlist } from '../../interfaces/playlists';
+import type { Episode } from '../../interfaces/episode';
 import { categoriesService } from '../../services/categories';
+import { searchEpisodes } from '../../services/search';
+import { fetchMoreLikeArtistItems } from '../../pages/Home/utils/fetchMoreLikeArtistItems';
 
 // Utils
 import { groupBy, uniq, uniqBy } from 'lodash';
 
 // Constants
-import { MADE_FOR_YOU_URI, RANKING_URI, TRENDING_URI } from '../../constants/spotify';
+import {
+  MADE_FOR_YOU_URI,
+  PODCAST_SEARCH_MIGHT_LIKE_QUERY,
+  PODCAST_SEARCH_TO_TRY_QUERY,
+  RANKING_URI,
+  TRENDING_URI,
+} from '../../constants/spotify';
+
+export interface MoreLikeArtistSection {
+  artist: Artist;
+  items: Awaited<ReturnType<typeof fetchMoreLikeArtistItems>>;
+}
+
 
 const initialState: {
   topTracks: Track[];
@@ -30,15 +45,23 @@ const initialState: {
   trending: Playlist[];
   recentlyPlayed: (Track | Artist | Album)[];
   section: 'ALL' | 'MUSIC' | 'PODCAST';
+  podcastFilter: 'PODCASTS' | 'FOLLOWING';
+  episodesMightLike: Episode[];
+  episodesToTry: Episode[];
+  moreLikeArtists: MoreLikeArtistSection[];
 } = {
   trending: [],
   rankings: [],
   topTracks: [],
   section: 'ALL',
+  podcastFilter: 'PODCASTS',
   madeForYou: [],
   newReleases: [],
   recentlyPlayed: [],
   featurePlaylists: [],
+  episodesMightLike: [],
+  episodesToTry: [],
+  moreLikeArtists: [],
 };
 
 export const fetchMadeForYou = createAsyncThunk('home/fetchMadeForYou', async () => {
@@ -74,14 +97,17 @@ export const fetchRecentlyPlayed = createAsyncThunk('home/fetchRecentlyPlayed', 
 
     const groupedItems = groupBy(
       items.filter((item) => ['artist', 'playlist', 'album'].includes(item.context?.type)),
-      (item) => item.context.type
+      (item) => item.context.type,
     );
 
     const artistsTracks = groupedItems['artist'] || [];
     const albumsTracks = groupedItems['album'] || [];
 
-    const artistsIds = uniq(artistsTracks.map((item) => item.context.uri.split(':')[2]));
-    const albumsIds = uniq(albumsTracks.map((item) => item.context.uri.split(':')[2]));
+    // Cap how many ids we resolve: batch endpoints were removed (Feb 2026), so each id is now an
+    // individual GET. Resolving every unique id from 50 recently-played items could fire dozens of
+    // requests and trip the rate limit; the row only shows a handful, so 8 each is plenty.
+    const artistsIds = uniq(artistsTracks.map((item) => item.context.uri.split(':')[2])).slice(0, 8);
+    const albumsIds = uniq(albumsTracks.map((item) => item.context.uri.split(':')[2])).slice(0, 8);
 
     const promises = [
       artistsIds.length
@@ -119,6 +145,57 @@ export const fetchRecentlyPlayed = createAsyncThunk('home/fetchRecentlyPlayed', 
   }
 });
 
+const normalizeSearchEpisodes = (items: Episode[] = []) =>
+  items.filter((episode): episode is Episode => !!episode?.id && !!episode?.name && !!episode?.uri);
+
+const pickUniqueEpisodes = (pools: Episode[][], countPerPool: number) => {
+  const seen = new Set<string>();
+  const pick = (pool: Episode[], count: number) => {
+    const picked: Episode[] = [];
+    for (const episode of pool) {
+      if (picked.length >= count) break;
+      if (seen.has(episode.id)) continue;
+      seen.add(episode.id);
+      picked.push(episode);
+    }
+    return picked;
+  };
+
+  const [mightLikePool, toTryPool, ...fallbackPools] = pools;
+  const mightLike = pick(mightLikePool, countPerPool);
+  let toTry = pick(toTryPool, countPerPool);
+
+  if (toTry.length < countPerPool) {
+    const fallback = fallbackPools.flat();
+    toTry = [...toTry, ...pick(fallback, countPerPool - toTry.length)];
+  }
+
+  return { mightLike, toTry };
+};
+
+export const fetchPodcastEpisodes = createAsyncThunk('home/fetchPodcastEpisodes', async () => {
+  const [mightLikeRes, toTryRes] = await Promise.all([
+    searchEpisodes({ q: PODCAST_SEARCH_MIGHT_LIKE_QUERY, limit: 20 }),
+    searchEpisodes({ q: PODCAST_SEARCH_TO_TRY_QUERY, limit: 20, offset: 5 }),
+  ]);
+
+  const mightLikePool = normalizeSearchEpisodes(mightLikeRes.data.episodes?.items);
+  const toTryPool = normalizeSearchEpisodes(toTryRes.data.episodes?.items);
+  const combinedFallback = uniqBy([...toTryPool, ...mightLikePool], 'id');
+
+  return pickUniqueEpisodes([mightLikePool, toTryPool, combinedFallback], 1);
+});
+
+export const fetchMoreLikeArtists = createAsyncThunk('home/fetchMoreLikeArtists', async () => {
+  // Disabled. This fanned out `GET /artists/{id}/albums` per followed artist on EVERY Home load,
+  // which Spotify rate-limits *per endpoint* — that single endpoint was being driven into a 429
+  // cooldown while every other endpoint stayed healthy. The section was already degraded anyway
+  // (related-artists was removed from the API in Nov 2024 / Feb 2026, so it only showed the
+  // artist's own albums + name-matched playlists). Returning [] stops the hammering and lets the
+  // endpoint's rate-limit window recover. Re-enable via fetchMoreLikeArtistItems if quota allows.
+  return [];
+});
+
 export const fecthFeaturedPlaylists = createAsyncThunk(
   'home/fecthFeaturedPlaylists',
   async (_, { getState }) => {
@@ -128,7 +205,7 @@ export const fecthFeaturedPlaylists = createAsyncThunk(
       locale: state.language.language === 'es' ? 'es_AR' : undefined,
     });
     return response.data.playlists.items;
-  }
+  },
 );
 
 const homeSlice = createSlice({
@@ -137,6 +214,12 @@ const homeSlice = createSlice({
   reducers: {
     setSection(state, action: PayloadAction<'ALL' | 'MUSIC' | 'PODCAST'>) {
       state.section = action.payload;
+      if (action.payload !== 'PODCAST') {
+        state.podcastFilter = 'PODCASTS';
+      }
+    },
+    setPodcastFilter(state, action: PayloadAction<'PODCASTS' | 'FOLLOWING'>) {
+      state.podcastFilter = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -161,6 +244,13 @@ const homeSlice = createSlice({
     builder.addCase(fetchTrending.fulfilled, (state, action) => {
       state.trending = action.payload;
     });
+    builder.addCase(fetchPodcastEpisodes.fulfilled, (state, action) => {
+      state.episodesMightLike = action.payload.mightLike;
+      state.episodesToTry = action.payload.toTry;
+    });
+    builder.addCase(fetchMoreLikeArtists.fulfilled, (state, action) => {
+      state.moreLikeArtists = action.payload;
+    });
   },
 });
 
@@ -173,6 +263,8 @@ export const homeActions = {
   fetchNewReleases,
   fetchRecentlyPlayed,
   fecthFeaturedPlaylists,
+  fetchPodcastEpisodes,
+  fetchMoreLikeArtists,
 };
 
 export default homeSlice.reducer;
