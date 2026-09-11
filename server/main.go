@@ -10,8 +10,9 @@ func main() {
 	configPath := flag.String("config", "config.yaml", "Path to configuration file")
 	flag.Parse()
 
-	err := config.Init(*configPath)
+	clients, err := config.Init(*configPath)
 	if err != nil {
 		panic(err)
 	}
+
 }

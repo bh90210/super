@@ -8,6 +8,7 @@ import { navbar } from './navbar';
 import { profile } from './profile';
 import { playlist } from './playlist';
 import { navigation } from './navigation';
+import { settings } from './settings';
 import { playingBar } from './playingBar';
 
 export {
@@ -20,6 +21,7 @@ export {
   navbar,
   playlist,
   profile,
+  settings,
   playingBar,
   navigation,
 };

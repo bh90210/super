@@ -18,4 +18,9 @@ export const home = {
   PLAYLISTS: 'Playlists',
   you: 'you',
   'Made for you': 'Made for you',
+  'Log out of SUPER?': 'Log out of SUPER?',
+  'You will need to log in again to access your library.':
+    'You will need to log in again to access your library.',
+  'Log out': 'Log out',
+  Cancel: 'Cancel',
 };

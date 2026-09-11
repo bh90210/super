@@ -1,0 +1,108 @@
+@use './variables.scss' as *;
+
+.Settings-section {
+  padding: 24px;
+  max-width: 820px;
+  color: #fff;
+
+  .Settings-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 24px;
+  }
+
+  .Settings-card {
+    background-color: #1f1f1f;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+
+    h2 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin: 0 0 12px;
+    }
+  }
+
+  .Settings-label {
+    color: #b3b3b3;
+    font-size: 0.8125rem;
+    margin: 0;
+  }
+
+  .Settings-value {
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 4px 0 0;
+  }
+
+  .Settings-link {
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: underline;
+
+    &:hover {
+      color: #1ed760;
+    }
+  }
+
+  .Settings-languages {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+
+    button {
+      background: transparent;
+      border: 1px solid hsla(0, 0%, 100%, 0.3);
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 12px 16px;
+      text-align: start;
+
+      .title {
+        font-size: 0.9375rem;
+        font-weight: 700;
+      }
+
+      .subtitle {
+        color: #b3b3b3;
+        font-size: 0.75rem;
+      }
+
+      &:hover {
+        border-color: #fff;
+      }
+
+      &.selected {
+        border-color: #1ed760;
+        background-color: #1ed7601f;
+
+        .subtitle {
+          color: #a7d7b4;
+        }
+      }
+    }
+  }
+
+  .Settings-logout {
+    background: transparent;
+    border: 1px solid hsla(0, 0%, 100%, 0.3);
+    border-radius: 9999px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 700;
+    padding: 8px 20px;
+
+    &:hover {
+      border-color: #f15e6c;
+      color: #f15e6c;
+    }
+  }
+}

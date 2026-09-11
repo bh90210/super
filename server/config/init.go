@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bh90210/super/server/api"
 	dgo "github.com/dgraph-io/dgo/v250"
 	min "github.com/minio/minio-go/v7"
 	miniocreds "github.com/minio/minio-go/v7/pkg/credentials"
@@ -49,24 +48,35 @@ type Config struct {
 	Keto *keto `yaml:"keto"`
 }
 
-func Init(configPath string) error {
+type Clients struct {
+	Dgraph *dgo.Dgraph
+	Minio  *min.Client
+	Keto   KetoClient
+}
+
+type KetoClient struct {
+	Read  *grpc.ClientConn
+	Write *grpc.ClientConn
+}
+
+func Init(configPath string) (*Clients, error) {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		slog.Error("failed to read config file", slog.String("error", err.Error()))
-		return err
+		return nil, err
 	}
 
 	var config Config
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		slog.Error("failed to unmarshal config", slog.String("error", err.Error()))
-		return err
+		return nil, err
 	}
 
 	// Start backend services.
 	return start(&config)
 }
 
-func start(c *Config) error {
+func start(c *Config) (*Clients, error) {
 	// Prometheus metrics server.
 	go func() {
 		for {
@@ -85,33 +95,37 @@ func start(c *Config) error {
 	dgraphClient, err := c.Dgraph.connect()
 	if err != nil {
 		slog.Error("dgraph client", slog.String("error", err.Error()))
-		return err
+		return nil, err
 	}
 
 	// Minio client.
 	minioClient, err := c.Minio.connect()
 	if err != nil {
 		slog.Error("minio client", slog.String("error", err.Error()))
-		return err
+		return nil, err
 	}
 
 	// Keto client.
 	ketoRead, ketoWrite, err := c.Keto.connect()
 	if err != nil {
 		slog.Error("keto client", slog.String("error", err.Error()))
-		return err
+		return nil, err
 	}
 
-	_ = dgraphClient
-	_ = minioClient
-	_ = ketoRead
-	_ = ketoWrite
+	ic := Clients{
+		Dgraph: dgraphClient,
+		Minio:  minioClient,
+		Keto: KetoClient{
+			Read:  ketoRead,
+			Write: ketoWrite,
+		},
+	}
 
 	// Create SSL credentials.
 	creds, err := credentials.NewServerTLSFromFile(c.Server.SSLCertPath, c.Server.SSLKeyPath)
 	if err != nil {
 		slog.Error("failed to create credentials", slog.String("error", err.Error()))
-		return err
+		return nil, err
 	}
 
 	// Use Credentials in gRPC server options.
@@ -136,22 +150,20 @@ func start(c *Config) error {
 		}
 	}()
 
-	api.RegisterLibraryServer(grpcServer, importService)
-
 	lis, err := net.Listen("tcp", c.Server.ListenAddress+":"+c.Server.ListenPort)
 	if err != nil {
 		slog.Error("failed to listen", slog.String("error", err.Error()))
-		return err
+		return nil, err
 	}
 
 	slog.Info("starting gRPC server on " + c.Server.ListenAddress + ":" + c.Server.ListenPort)
 
 	if err := grpcServer.Serve(lis); err != nil {
 		slog.Error("failed to serve", slog.String("error", err.Error()))
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &ic, nil
 }
 
 type server struct {

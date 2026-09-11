@@ -33,7 +33,10 @@ const initialState: { token?: string; playerLoaded: boolean; user?: User; reques
 export const loginToSpotify = createAsyncThunk<{ token?: string; loaded: boolean }>(
   'auth/loginToSpotify',
   async (_, thunkAPI) => {
-    // Bypassed - just return mock data
+    // Bypassed - restore the mock identity so the logged-in UI comes back after
+    // a logout. Without this, `authSlice`'s extraReducers would leave `user`
+    // undefined and the app would be stuck in the logged-out state.
+    thunkAPI.dispatch(fetchUser());
     return { token: 'mock-token', loaded: true };
   }
 );
@@ -55,6 +58,15 @@ const authSlice = createSlice({
     },
     setPlayerLoaded(state, action: PayloadAction<{ playerLoaded: boolean }>) {
       state.playerLoaded = action.payload.playerLoaded;
+    },
+    // Clears the session. `store.ts` also listens for this action and resets the
+    // whole store, so every slice (library, playlists, player, …) returns to its
+    // initial state when the user logs out.
+    logout(state) {
+      state.user = undefined;
+      state.token = undefined;
+      state.requesting = false;
+      state.playerLoaded = false;
     },
   },
   extraReducers: (builder) => {

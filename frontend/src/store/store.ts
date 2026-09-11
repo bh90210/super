@@ -63,7 +63,8 @@ const appReducer = combineReducers({
 
 // @ts-ignore
 const rootReducer = (state, action) => {
-  if (action.type === 'auth/removeUser') {
+  // Logging out wipes every slice back to its initial state.
+  if (action.type === 'auth/logout') {
     return appReducer(undefined, action);
   }
   return appReducer(state, action);
