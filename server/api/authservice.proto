@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/bh90210/super/server/api";
+
+service AuthService {
+  // --- Client Authentication & Onboarding ---
+  rpc InitializeFlow (InitializeFlowRequest) returns (InitializeFlowResponse);
+  rpc RequestLoginCode (RequestLoginCodeRequest) returns (RequestLoginCodeResponse);
+  rpc SubmitAuth (SubmitAuthRequest) returns (SubmitAuthResponse);
+  rpc WhoAmI (WhoAmIRequest) returns (WhoAmIResponse);
+  rpc Logout (LogoutRequest) returns (LogoutResponse);
+
+  // --- Admin Operations ---
+  rpc InviteUser (InviteUserRequest) returns (InviteUserResponse);
+}
+
+enum FlowType {
+  FLOW_TYPE_UNSPECIFIED = 0;
+  FLOW_TYPE_LOGIN = 1;       // Standard Email OTP Login
+  FLOW_TYPE_RECOVERY = 2;    // Redeeming Email Invite OTP
+}
+
+message InitializeFlowRequest {
+  FlowType type = 1;
+}
+
+message InitializeFlowResponse {
+  string flow_id = 1;
+}
+
+// Triggers Kratos to dispatch a fresh 6-digit OTP code to the user's email
+message RequestLoginCodeRequest {
+  string flow_id = 1;
+  string email = 2;
+}
+
+message RequestLoginCodeResponse {
+  bool code_sent = 1;
+}
+
+message SubmitAuthRequest {
+  string flow_id = 1;
+  string email = 2;
+  string code = 3; // The OTP code received in the email
+}
+
+message SubmitAuthResponse {
+  string session_token = 1;
+  UserIdentity identity = 2;
+}
+
+// --- Admin Invitation ---
+
+message InviteUserRequest {
+  string email = 1;
+  map<string, string> traits = 2; // e.g., name, role
+  bool send_email_via_kratos = 3; // If true, Kratos/Courier emails the code directly
+}
+
+message InviteUserResponse {
+  string identity_id = 1;
+  string recovery_code = 2; // Returned if send_email_via_kratos is false (for custom email templates)
+}
+
+// --- Session & Identity Models ---
+
+message WhoAmIRequest {
+  string session_token = 1;
+}
+
+message WhoAmIResponse {
+  bool active = 1;
+  UserIdentity identity = 2;
+}
+
+message LogoutRequest {
+  string session_token = 1;
+}
+
+message LogoutResponse {
+  bool success = 1;
+}
+
+message UserIdentity {
+  string id = 1;
+  string email = 2;
+  map<string, string> traits = 3;
+}

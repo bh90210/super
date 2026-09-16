@@ -10,8 +10,6 @@ import (
 	"time"
 
 	dgo "github.com/dgraph-io/dgo/v250"
-	min "github.com/minio/minio-go/v7"
-	miniocreds "github.com/minio/minio-go/v7/pkg/credentials"
 	relationtuples "github.com/ory/keto/proto/ory/keto/relation_tuples/v1alpha2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.yaml.in/yaml/v2"
@@ -42,16 +40,22 @@ type Config struct {
 	Server *server `yaml:"server"`
 	// Dgraph configuration.
 	Dgraph *dgraph `yaml:"dgraph"`
-	// Minio configuration.
-	Minio *minio `yaml:"minio"`
 	// Keto configuration.
 	Keto *keto `yaml:"keto"`
 }
 
 type Clients struct {
 	Dgraph *dgo.Dgraph
-	Minio  *min.Client
 	Keto   KetoClient
+	Kratos
+	// Redis
+	// SeaweedFS
+	// Mailgun
+	// Prometheus
+	// Acoustid
+	// Discogs
+	// Msuicbrainz
+	// Soulseek
 }
 
 type KetoClient struct {
@@ -98,13 +102,6 @@ func start(c *Config) (*Clients, error) {
 		return nil, err
 	}
 
-	// Minio client.
-	minioClient, err := c.Minio.connect()
-	if err != nil {
-		slog.Error("minio client", slog.String("error", err.Error()))
-		return nil, err
-	}
-
 	// Keto client.
 	ketoRead, ketoWrite, err := c.Keto.connect()
 	if err != nil {
@@ -114,7 +111,7 @@ func start(c *Config) (*Clients, error) {
 
 	ic := Clients{
 		Dgraph: dgraphClient,
-		Minio:  minioClient,
+		// Minio:  minioClient,
 		Keto: KetoClient{
 			Read:  ketoRead,
 			Write: ketoWrite,
@@ -208,36 +205,6 @@ func (d *dgraph) connect() (*dgo.Dgraph, error) {
 	slog.Info("Connected to Dgraph", "addresses", strings.Join(d.Addresses, ","))
 
 	return client, nil
-}
-
-type minio struct {
-	Endpoint  string `yaml:"endpoint"`
-	AccessKey string `yaml:"access_key"`
-	SecretKey string `yaml:"secret_key"`
-	UseSSL    bool   `yaml:"use_ssl"`
-}
-
-func (m *minio) connect() (*min.Client, error) {
-	// Initialize minio client object.
-	minioClient, err := min.New(m.Endpoint, &min.Options{
-		Creds:  miniocreds.NewStaticV4(m.AccessKey, m.SecretKey, ""),
-		Secure: m.UseSSL,
-	})
-	if err != nil {
-		slog.Error("failed to create minio client", slog.String("error", err.Error()))
-		return nil, err
-	}
-
-	// Test connection with a health check.
-	_, err = minioClient.HealthCheck(time.Second * 5)
-	if err != nil {
-		slog.Error("minio health check failed", slog.String("error", err.Error()))
-		return nil, err
-	}
-
-	slog.Info("Connected to Minio", "endpoint", m.Endpoint, "user", m.AccessKey, "ssl", m.UseSSL, "client", minioClient.EndpointURL().Scheme)
-
-	return minioClient, nil
 }
 
 type keto struct {
