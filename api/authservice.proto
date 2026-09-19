@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package api;
 
-option go_package = "github.com/bh90210/super/server/api";
+option go_package = "github.com/bh90210/super/api";
 
 service AuthService {
   // --- Client Authentication & Onboarding ---

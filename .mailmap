@@ -1,0 +1,11 @@
+# Canonical identity for this repository.
+#
+# Maps the author/committer identities that belong to the repository owner so
+# `git log`, `git shortlog` and GitHub all render them as a single person.
+#
+#   ktc@protonmail.ch  has appeared as both "bh90210" and "Byron"
+#
+# The simple form below canonicalises both the name and the email for every
+# commit made with that address, so no per-commit entries are needed.
+
+bh90210 <ktc@protonmail.ch>

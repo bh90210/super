@@ -1,8 +1,11 @@
 # Frontend upstream provenance
 
 `frontend/` is a fork of **[francoborrelli/spotify-react-web-client](https://github.com/francoborrelli/spotify-react-web-client)**
-(MIT licensed — see `LICENSE`). It is the Spotify UI shell for `super`; the Go
-backend owns all data.
+(MIT licensed — see `frontend/LICENSE`). It is the Spotify UI shell for `super`;
+the Go backend owns all data.
+
+Copyright (c) 2018 Franco Martín Borrelli. The MIT notice is retained in full in
+`frontend/LICENSE`; do not remove it.
 
 Do **not** use [francoborrelli/portfolio](https://github.com/francoborrelli/portfolio)
 as a source: it is GPL-3.0 (copyleft) and only ships 5 screens, so it is both a
@@ -15,23 +18,36 @@ licensing trap and a smaller starting point.
 | Upstream | `https://github.com/francoborrelli/spotify-react-web-client` |
 | Remote name | `frontend-upstream` |
 | Upstream commit | `c48ed78d30697e8ab5c1aa327ed84859f966e761` (2026-07-21) |
-| Commit that synced it | `Frontend: refresh to upstream spotify-react-web-client (c48ed78)` |
-| Previous vendored base | upstream `72abc7a` (2025-12-29), imported in `5dc7213 "New GUI"` |
+| Vendored as | commit `4e91246` (previously the subtree merge `f630a8a`) |
+| Previous vendored base | upstream `72abc7a` (2025-12-29) |
 
-The sync commit is a merge whose second parent is the **raw upstream commit**.
-That ancestor is what makes `git subtree pull` work, so do not rebase or
-squash it away.
+## How the frontend is vendored now
 
-## Pulling future upstream changes
+The frontend was originally imported as a **git subtree merge**, which embedded
+the full upstream history (and its authors) into this repository. It is now
+vendored as a **single import commit**: the content is identical, but the
+upstream commits are no longer part of this repository's history, so the
+repository's contributor list reflects only its own maintainer.
 
-```bash
-git fetch frontend-upstream main
-git subtree pull --prefix=frontend frontend-upstream main
-```
+Consequences:
 
-Subsequent pulls only carry the delta since the last split, so they are small.
-Because the same commit is merged at the root, the merge pull at the end is
-always a harmless no-op.
+- **`git subtree pull` no longer works.** It needs the raw upstream commit as an
+  ancestor, which is exactly what the import commit removed. To take upstream
+  changes, apply them as a normal patch/diff against the recorded upstream
+  commit instead:
+
+  ```bash
+  git fetch frontend-upstream main
+  git diff c48ed78..frontend-upstream/main -- . | git apply -3
+  ```
+
+  Then update the "Upstream commit" row above and record the new SHA in the
+  import commit message. Verify `frontend/LICENSE` and this file still credit
+  the upstream author.
+
+- The upstream authorship is recorded here and in `frontend/LICENSE` rather than
+  in the commit graph. Keep it that way: this is the attribution that satisfies
+  the MIT licence.
 
 ## Local divergence to preserve
 

@@ -1,0 +1,87 @@
+# super — Dgraph schema for users and invitations.
+#
+# Two node types:
+#
+#   User   One node per person. Created when an invitation is redeemed
+#          (AuthService.SubmitAuth) or when a self-registration flow completes,
+#          and keyed by the Kratos identity id and the email address.
+#
+#   Invite A pending invitation created by an admin (AuthService.InviteUser).
+#          It records who was invited, the Kratos identity that was
+#          pre-created for them, and the traits used to seed that identity.
+#
+# Predicates carry a `super.` prefix because this Dgraph instance is shared with
+# other stacks (see auto/configs/dgraph). Dgraph reserves the `dgraph.` prefix.
+#
+# `@upsert` marks the predicate that acts as the uniqueness key of an upsert
+# block. On its own it does NOT reject duplicate values — it only makes
+# concurrent writes to the same key conflict instead of both succeeding.
+# Uniqueness is enforced by the `@if(eq(len(v), 0))` guards in user.go and
+# invite.go, which run the mutation only when the lookup matched nothing.
+#
+# Applied idempotently on boot by Store.ApplySchema.
+
+# --- User -------------------------------------------------------------------
+
+super.user.kratos_id: string @index(exact) @upsert .
+super.user.email: string @index(exact) @upsert .
+super.user.display_name: string @index(term) .
+super.user.name_first: string @index(term) .
+super.user.name_last: string @index(term) .
+super.user.status: string @index(exact) .
+super.user.admin: bool @index(bool) .
+super.user.locale: string @index(exact) .
+super.user.created_at: datetime @index(hour) .
+super.user.updated_at: datetime @index(hour) .
+super.user.last_seen_at: datetime .
+
+# The invitation this user redeemed. Reversed so an invite can resolve the
+# account it produced (`~super.user.invite`).
+super.user.invite: uid @reverse .
+
+# --- Invite -----------------------------------------------------------------
+
+super.invite.email: string @index(exact) @upsert .
+super.invite.kratos_id: string @index(exact) @upsert .
+super.invite.code_hash: string @index(exact) .
+super.invite.status: string @index(exact) .
+super.invite.traits: string .
+super.invite.created_at: datetime @index(hour) .
+super.invite.expires_at: datetime @index(hour) .
+super.invite.used_at: datetime .
+
+# The admin who issued the invitation. Reversed so an admin resolves the
+# invitations they sent (`~super.invite.invited_by`).
+super.invite.invited_by: uid @reverse .
+
+# --- Types ------------------------------------------------------------------
+# Predicate types are declared above. Listing the bare names here is the
+# supported form: repeating `field: type` inside a type block is deprecated and
+# makes Dgraph log a warning for every field.
+
+type User {
+  super.user.kratos_id
+  super.user.email
+  super.user.display_name
+  super.user.name_first
+  super.user.name_last
+  super.user.status
+  super.user.admin
+  super.user.locale
+  super.user.created_at
+  super.user.updated_at
+  super.user.last_seen_at
+  super.user.invite
+}
+
+type Invite {
+  super.invite.email
+  super.invite.kratos_id
+  super.invite.code_hash
+  super.invite.status
+  super.invite.traits
+  super.invite.created_at
+  super.invite.expires_at
+  super.invite.used_at
+  super.invite.invited_by
+}
