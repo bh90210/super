@@ -8,3 +8,4 @@ byron/*
 .env
 auto/*
 server/examples/
+frontend/UPSTREAM.md
