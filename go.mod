@@ -14,6 +14,7 @@ require (
 	github.com/mailgun/mailgun-go/v5 v5.11.0
 	github.com/minio/minio-go/v7 v7.0.98
 	github.com/ory/keto/proto v0.13.0-alpha.0
+	github.com/ory/kratos-client-go/v26 v26.2.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/wailsapp/wails/v3 v3.0.0-beta.20
 	go.yaml.in/yaml/v2 v2.4.3

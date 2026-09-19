@@ -783,7 +783,7 @@ const file_api_authservice_proto_rawDesc = "" +
 	"\x06WhoAmI\x12\x12.api.WhoAmIRequest\x1a\x13.api.WhoAmIResponse\x121\n" +
 	"\x06Logout\x12\x12.api.LogoutRequest\x1a\x13.api.LogoutResponse\x12=\n" +
 	"\n" +
-	"InviteUser\x12\x16.api.InviteUserRequest\x1a\x17.api.InviteUserResponseB%Z#github.com/bh90210/super/server/apib\x06proto3"
+	"InviteUser\x12\x16.api.InviteUserRequest\x1a\x17.api.InviteUserResponseB\x1eZ\x1cgithub.com/bh90210/super/apib\x06proto3"
 
 var (
 	file_api_authservice_proto_rawDescOnce sync.Once
